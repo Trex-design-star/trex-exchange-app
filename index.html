@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trex — App (Phase 4 preview)</title>
+<style>
+  :root{--black:#0B0D12;--blue:#155EEF;--blue-dark:#0B2FB3;--blue-soft:#E4EBFF;
+    --brown:#8C5A2B;--brown-soft:#F4E9D8;--red:#D92D20;--red-soft:#FEE4E2;
+    --ink:#0B0D12;--muted:#4B5563;--bg:#F7F4EF;--card:#fff;--line:#E4E0D6;--radius:14px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:680px;margin:0 auto;padding:16px 14px 48px}
+  .top{background:var(--black);color:#fff;border-radius:var(--radius);padding:16px}
+  .top small{color:#9AA0AA;letter-spacing:.1em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0}
+  .row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .muted{color:var(--muted);font-size:13px}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-block}
+  .b-blue{background:var(--blue-soft);color:var(--blue-dark)}
+  .b-brown{background:var(--brown-soft);color:var(--brown)}
+  .b-red{background:var(--red-soft);color:var(--red)}
+  .btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+  .btn-blue{background:var(--blue);color:#fff}
+  .btn-black{background:var(--black);color:#fff}
+  .btn-line{background:#fff;border:2px solid var(--black);color:var(--black)}
+  .btn:disabled{background:#D0D5DD;color:#fff;cursor:not-allowed}
+  input,select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:6px}
+  .offer{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+  #tradeView{display:none}
+  .steps{font-size:13px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-line}
+  .chat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;min-height:80px;margin-top:8px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <small>TREX • SINGLE-PAGE PREVIEW</small>
+    <h2 style="margin:6px 0">Trade FX ↔ NGN safely</h2>
+    <div class="muted" style="color:#C7CBD1">Bond-backed vendors • proof at every step • no wallet custody</div>
+  </div>
+
+  <div class="card">
+    <div class="row"><b>Demo vendor bond (standing)</b><span class="badge b-brown">25% of limit</span></div>
+    <div class="muted">Limit ₦1,000,000 • Bond ₦250,000 • Used <span id="usedCap">₦0</span> • Free <span id="freeCap">₦1,000,000</span></div>
+  </div>
+
+  <div id="offersView" class="card">
+    <div class="row"><b>Live offers</b>
+      <select id="filter" style="width:auto;margin:0"><option value="ALL">All</option><option>USD/NGN</option><option>GBP/NGN</option><option>EUR/NGN</option></select>
+    </div>
+    <div id="offers"></div>
+  </div>
+
+  <div id="tradeView" class="card">
+    <div class="row"><b id="tradeTitle">Trade</b><span id="tradeState" class="badge b-blue">Opened</span></div>
+    <div class="muted mono" id="tradeMeta"></div>
+    <div class="steps" id="steps"></div>
+    <label>Amount (NGN)</label>
+    <input id="amt" type="number" value="100000" min="10000" max="500000" />
+    <label>Proof file name (simulated upload)</label>
+    <input id="proof" placeholder="e.g. gtb-receipt-123.png" />
+    <button class="btn btn-blue" id="btnPay">1 — Mark payment sent + attach proof</button>
+    <button class="btn btn-black" id="btnVendorConfirm" disabled>2 — Vendor confirms receipt</button>
+    <button class="btn btn-blue" id="btnDeliver" disabled>3 — Vendor sends + attaches delivery proof</button>
+    <button class="btn btn-black" id="btnComplete" disabled>4 — Customer confirms receipt (Complete)</button>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-line" id="btnDispute" style="width:48%">Open dispute</button>
+      <button class="btn btn-line" id="btnBack" style="width:48%">Back to offers</button>
+    </div>
+    <div class="chat" id="chat"><b>Trade chat</b><div id="chatLog" class="muted">Chat opened automatically.</div></div>
+  </div>
+</div>
+
+<script>
+const offers = [
+  {id:"OFR-1", pair:"USD/NGN", rate:"₦1,520 / $1", min:10000, max:500000, vendor:"Adaobi • ★4.8 • 312 trades", tier:"Gold"},
+  {id:"OFR-2", pair:"GBP/NGN", rate:"₦1,940 / £1", min:20000, max:400000, vendor:"Tunde • ★4.9 • 540 trades", tier:"Gold"},
+  {id:"OFR-3", pair:"EUR/NGN", rate:"₦1,650 / €1", min:10000, max:250000, vendor:"New vendor • ★new • 3 trades", tier:"Probation"},
+];
+const LIMIT = 1000000;
+let used = 0, current = null, step = 0;
+
+const $ = id => document.getElementById(id);
+function caps(){ $("usedCap").textContent = "₦"+used.toLocaleString(); $("freeCap").textContent = "₦"+(LIMIT-used).toLocaleString(); }
+function renderOffers(){
+  const f = $("filter").value;
+  $("offers").innerHTML = "";
+  offers.filter(o=>f==="ALL"||o.pair===f).forEach(o=>{
+    const d = document.createElement("div"); d.className="offer";
+    d.innerHTML = `<div class="row"><b>${o.pair}</b><span class="badge ${o.tier==="Probation"?"b-brown":"b-blue"}">${o.tier}</span></div>
+      <div>${o.rate}</div><div class="muted">${o.vendor} • Min ₦${o.min.toLocaleString()} – Max ₦${o.max.toLocaleString()}</div>`;
+    const b = document.createElement("button"); b.className="btn btn-blue"; b.textContent="Open trade";
+    b.onclick = ()=>openTrade(o); d.appendChild(b); $("offers").appendChild(d);
+  });
+}
+function log(m){ const p=document.createElement("div"); p.textContent=m; $("chatLog").appendChild(p); }
+function setState(s, cls){ $("tradeState").textContent=s; $("tradeState").className="badge "+cls; }
+function openTrade(o){
+  const amt = Math.min(Math.max(100000,o.min),o.max);
+  if(used + amt > LIMIT){ alert("Blocked: vendor has insufficient bond capacity (BND-03)."); return; }
+  used += amt; caps(); current={offer:o, amt}; step=1;
+  $("offersView").style.display="none"; $("tradeView").style.display="block";
+  $("tradeTitle").textContent = `Trade ${o.pair} @ ${o.rate}`;
+  $("tradeMeta").textContent = `${o.id} • ${o.vendor} • Amount ₦${amt.toLocaleString()}`;
+  $("steps").textContent = "State: Trade opened → capacity reserved.\nNext: customer sends payment.";
+  setState("Trade opened","b-blue");
+  $("chatLog").innerHTML="Chat opened automatically.";
+  log(`Customer opened trade for ₦${amt.toLocaleString()}.`);
+  $("btnPay").disabled=false; $("btnVendorConfirm").disabled=true; $("btnDeliver").disabled=true; $("btnComplete").disabled=true;
+}
+$("btnPay").onclick=()=>{
+  if(!$("proof").value){ alert("Attach proof of payment first (TRD-02)."); return; }
+  step=2; log("Customer: I've sent payment + proof: "+$("proof").value);
+  $("steps").textContent="State: Payment sent, awaiting vendor confirmation.\nNext: vendor confirms within window.";
+  setState("Payment sent","b-blue"); $("btnPay").disabled=true; $("btnVendorConfirm").disabled=false;
+};
+$("btnVendorConfirm").onclick=()=>{
+  step=3; log("Vendor: receipt confirmed.");
+  $("steps").textContent="State: Payment confirmed, awaiting delivery.\nNext: vendor sends currency.";
+  $("btnVendorConfirm").disabled=true; $("btnDeliver").disabled=false;
+};
+$("btnDeliver").onclick=()=>{
+  step=4; log("Vendor: currency sent + delivery proof attached.");
+  $("steps").textContent="State: Delivery sent, awaiting customer confirmation.\nNext: customer confirms or auto-release elapses.";
+  setState("Delivery sent","b-brown"); $("btnDeliver").disabled=true; $("btnComplete").disabled=false;
+};
+$("btnComplete").onclick=()=>{
+  used -= current.amt; if(used<0)used=0; caps();
+  $("steps").textContent="State: Completed. Capacity freed, fee kept (BND-05).";
+  setState("Completed","b-blue"); log("Trade marked successful. Capacity freed.");
+  $("btnComplete").disabled=true;
+};
+$("btnDispute").onclick=()=>{
+  $("steps").textContent="State: Disputed — frozen for admin review (DIS-02).";
+  setState("Disputed","b-red"); log("Dispute opened. Trade frozen.");
+};
+$("btnBack").onclick=()=>{ $("tradeView").style.display="none"; $("offersView").style.display="block"; };
+$("filter").onchange=renderOffers;
+caps(); renderOffers();
+</script>
+</body>
+</html>
