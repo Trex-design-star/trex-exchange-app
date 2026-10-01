@@ -21,7 +21,13 @@
     radial-gradient(500px 300px at 50% -10%, rgba(21,94,239,.25), transparent 60%),
     linear-gradient(180deg,#0A1230 0%,#060913 70%)}
   .gridlines{position:absolute;inset:0;opacity:.25;background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(closest-side at 50% 60%,#000 30%,transparent 100%)}
-  .node{position:absolute;bottom:120px;text-align:center;transition:opacity .6s, transform .6s}
+  .giant{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:1;pointer-events:none;user-select:none;overflow:hidden}
+  .giant span{font-size:clamp(110px,30vw,300px);font-weight:900;letter-spacing:.02em;line-height:1;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.18);animation:lit 4s ease-in-out infinite}
+  .giant span:nth-child(2){animation-delay:.5s}
+  .giant span:nth-child(3){animation-delay:1s}
+  .giant span:nth-child(4){animation-delay:1.5s}
+  @keyframes lit{0%,100%{color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.16);transform:scale(1);text-shadow:none}25%{color:#155EEF;-webkit-text-stroke:2px #7AA5FF;transform:scale(1.22);text-shadow:0 0 46px rgba(21,94,239,.95),0 0 90px rgba(21,94,239,.5)}55%{color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.16);transform:scale(1);text-shadow:none}}
+  .node{position:absolute;bottom:120px;text-align:center;transition:opacity .6s, transform .6s;z-index:2}
   .node .avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;background:#141B2E;border:2px solid rgba(255,255,255,.25);margin:0 auto}
   .node small{display:block;margin-top:6px;font-size:11px;color:#C7CBD1}
   .node b{font-size:13px}
@@ -76,7 +82,7 @@
   .btn-blue{background:var(--blue);color:#fff}
   .foot{text-align:center}
   .foot a{color:var(--blue);text-decoration:none;font-weight:600}
-  @media (prefers-reduced-motion:reduce){.coin,.pulse,#shieldWrap .ring{animation:none!important}}
+  @media (prefers-reduced-motion:reduce){.coin,.pulse,#shieldWrap .ring,.giant span{animation:none!important}}
 </style>
 </head>
 <body>
@@ -85,6 +91,7 @@
   <div class="hero" id="hero">
     <div class="scene" aria-hidden="true">
       <div class="sky"></div><div class="gridlines"></div>
+      <div class="giant" aria-hidden="true"><span>T</span><span>R</span><span>E</span><span>X</span></div>
       <svg id="route" viewBox="0 0 600 400" preserveAspectRatio="none">
         <path id="routePath" d="M90,280 C220,180 380,180 510,280"/>
         <path id="routeGlow" d="M90,280 C220,180 380,180 510,280"/>
