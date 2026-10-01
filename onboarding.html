@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trex — Create account</title>
+<script src="js/trex.js"></script>
+<script src="js/api.js"></script>
+<style>
+  :root{--black:#0B0D12;--blue:#155EEF;--blue-dark:#0B2FB3;--blue-soft:#E4EBFF;
+    --brown:#8C5A2B;--brown-soft:#F4E9D8;--red:#D92D20;--red-soft:#FEE4E2;
+    --ink:#0B0D12;--muted:#4B5563;--bg:#2A0A54;--card:#fff;--line:#E4E0D6;--radius:14px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:560px;margin:0 auto;padding:16px 14px 48px}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 12px}
+  .nav b{letter-spacing:.08em;color:#fff}
+  .nav a{color:#B9CCFF;text-decoration:none;font-weight:600;font-size:14px}
+  .prev{display:inline-block;font-size:11px;font-weight:700;background:var(--brown-soft);color:var(--brown);border-radius:999px;padding:3px 10px;margin-bottom:8px}
+  .top{background:var(--black);color:#fff;border-radius:var(--radius);padding:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:12px 0}
+  .muted{color:var(--muted);font-size:13px}
+  .step-dot{display:inline-block;width:26px;height:26px;border-radius:50%;background:#E4E0D6;color:#4B5563;text-align:center;line-height:26px;font-weight:800;font-size:13px;margin-right:4px}
+  .step-dot.on{background:var(--blue);color:#fff}
+  .step-dot.done{background:var(--black);color:#fff}
+  label{font-size:13px;font-weight:700;display:block;margin:12px 0 4px}
+  input,select{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:10px;font-size:16px}
+  input:focus,select:focus{outline:none;border-color:var(--blue)}
+  .otp{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:6px}
+  .otp input{text-align:center;font-size:20px;font-weight:800;padding:10px 4px}
+  .btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px;text-decoration:none;display:block;text-align:center}
+  .btn-blue{background:var(--blue);color:#fff}
+  .btn-black{background:var(--black);color:#fff}
+  .btn-line{background:#fff;border:2px solid var(--black);color:var(--black)}
+  .hidden{display:none}
+  .tier{background:var(--black);color:#fff;border-radius:10px;padding:12px;margin-top:10px}
+  .bondbox{background:var(--brown-soft);border-radius:10px;padding:12px;margin-top:10px;font-size:14px}
+  .curpill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;margin:4px 4px 0 0;background:#fff}
+  .foot{text-align:center;margin-top:16px}
+  .foot a{color:var(--blue);text-decoration:none;font-weight:600;font-size:14px}
+  .resend{font-size:13px;margin-top:8px}
+  .resend a{color:var(--blue);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><b>TREX</b><a href="index.html">Home</a></div>
+  <span class="prev">Preview — sample figures, no real money moves</span>
+  <div class="top">
+    <h2 style="margin:0 0 6px">Create your account</h2>
+    <div class="muted" style="color:#C7CBD1">One account for every currency you touch. No ID documents needed.</div>
+  </div>
+
+  <div class="card">
+    <span class="step-dot on" id="d1">1</span><span class="step-dot" id="d2">2</span><span class="step-dot" id="d3">3</span><span class="step-dot" id="d4">4</span><span class="step-dot" id="d5">5</span>
+    <span class="muted">Phone → Country → Email → Security → Vendor</span>
+  </div>
+
+  <div class="card" id="s1">
+    <b>Verify your phone number</b>
+    <p class="muted">We will text you a 6-digit code.</p>
+    <label>Phone number</label>
+    <input id="phone" placeholder="+234 801 234 5678" inputmode="tel" />
+    <button class="btn btn-blue" id="sendPhoneOtp">Send code</button>
+    <div class="hidden" id="phoneSentWrap">
+      <p class="muted" id="phoneSentMsg"></p>
+      <label>Enter the 6-digit code</label>
+      <div class="otp" id="phoneOtp">
+        <input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/>
+      </div>
+      <div class="resend"><span id="phoneTimer"></span> <a href="#" id="resendPhone">Resend code</a></div>
+    </div>
+    <button class="btn btn-black" id="verifyPhone">Verify phone</button>
+    <div class="muted" id="phoneErr"></div>
+  </div>
+
+  <div class="card hidden" id="sCountry">
+    <b>Where are you based?</b>
+    <p class="muted" id="detectMsg">Detecting your country…</p>
+    <label>Country</label>
+    <select id="country"></select>
+    <label>Your Trex currencies</label>
+    <div id="curList"></div>
+    <label>Add another currency</label>
+    <select id="addCur"></select>
+    <button class="btn btn-blue" id="countryGo">Continue</button>
+  </div>
+
+  <div class="card hidden" id="s2">
+    <b>Verify your email</b>
+    <p class="muted">We will email you a 6-digit code.</p>
+    <label>Email</label>
+    <input id="email" placeholder="you@example.com" inputmode="email" />
+    <button class="btn btn-blue" id="sendEmailOtp">Send code</button>
+    <div class="hidden" id="emailSentWrap">
+      <label>Enter the 6-digit code</label>
+      <div class="otp" id="emailOtp">
+        <input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/>
+      </div>
+    </div>
+    <button class="btn btn-black" id="verifyEmail">Verify email</button>
+    <div class="muted" id="emailErr"></div>
+  </div>
+
+  <div class="card hidden" id="s3">
+    <b>Secure your account</b>
+    <p class="muted">A quick liveness check confirms a real person is present — it is not full ID verification. Your name must match your bank account later.</p>
+    <label>Full name</label>
+    <input id="fullName" placeholder="e.g. Adaeze Okafor" />
+    <label>Liveness check</label>
+    <input type="file" accept="image/*" capture="user" id="selfie" />
+    <p class="muted">On this device your camera opens with positioning and lighting guidance. Here, choose a photo to continue.</p>
+    <label>App PIN (4 digits)</label>
+    <input id="pin" maxlength="4" inputmode="numeric" placeholder="••••" />
+    <label><input type="checkbox" id="bio" style="width:auto"> Unlock with fingerprint or face on this device</label>
+    <button class="btn btn-blue" id="finishPersonal">Continue</button>
+    <div class="tier hidden" id="tierBox">Welcome aboard: <b>Starter tier</b><br><span class="muted" style="color:#C7CBD1">Limits grow automatically as you complete trades.</span></div>
+  </div>
+
+  <div class="card hidden" id="s4">
+    <b>Sell currency as a vendor? (optional)</b>
+    <p class="muted">Vendors back every trade with a refundable bond. Skip this if you only want to trade.</p>
+    <label>Bond plan</label>
+    <select id="bondModel"><option value="standing">Standing bond — 25% of your trading limit (best if you trade often)</option><option value="pertrade">Per-trade bond — 50% of each trade (best if you trade occasionally)</option></select>
+    <label>Trading limit</label>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px"><input id="limit" type="number" value="10000" min="100" step="100"><select id="limitCur"></select></div>
+    <div class="bondbox" id="bondCalc"></div>
+    <label>Bank account for bond refunds</label>
+    <input id="bank" placeholder="Your bank •••4521" />
+    <div class="card" style="border-style:dashed;margin:10px 0">
+      <b>How Trex settles trades</b>
+      <div class="muted">Completed → bond released, fee kept • Cancelled before payment → everything returned • Vendor fails to deliver → customer compensated from the bond • False claim → vendor protected • Unclear → paused for human review.</div>
+      <label><input type="checkbox" id="accept" style="width:auto"> I understand and accept these rules</label>
+    </div>
+    <button class="btn btn-blue" id="finishVendor">Finish — open my dashboard</button>
+    <button class="btn btn-line" id="skipVendor">Skip — I only want to trade</button>
+  </div>
+
+  <div class="card hidden" id="done">
+    <b>Welcome to Trex 🎉</b>
+    <p class="muted" id="summary"></p>
+    <a href="dashboard.html" class="btn btn-blue">Open my dashboard →</a>
+  </div>
+
+  <div class="foot"><a href="index.html">← Back to home</a> • <a href="more.html">All pages →</a></div>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id);};
+var rnd=function(){return String(Math.floor(100000+Math.random()*900000));};
+var phoneSent="", emailSent="", attempts=0, chosen=[], phoneServer=false, emailServer=false;
+function apiOn(){ try{ return window.API&&API.on; }catch(e){ return false; } }
+function otpVal(el){ return Array.prototype.map.call(el.querySelectorAll("input"),function(i){return i.value;}).join(""); }
+function fillOtp(el,code){ var inputs=el.querySelectorAll("input"); for(var i=0;i<inputs.length;i++)inputs[i].value=code[i]||""; }
+document.querySelectorAll(".otp").forEach(function(box){
+  var arr=box.querySelectorAll("input");
+  arr.forEach(function(inp,ix){ inp.oninput=function(){ inp.value=inp.value.replace(/\D/g,"").slice(0,1); if(inp.value&&ix<5)arr[ix+1].focus(); }; });
+});
+function timer(el,secs){ var s=secs; var t=setInterval(function(){ el.textContent=s>0?("Didn't get it? Resend in "+(s--)+"s."):""; if(s<0){clearInterval(t);} },1000); }
+function prof(){ return TREX.profile()||{}; }
+$("sendPhoneOtp").onclick=function(){
+  if(!$("phone").value){ $("phoneErr").textContent="Enter your phone number first."; return; }
+  function sendLocal(){ phoneServer=false; phoneSent=rnd(); showPhoneSent(); }
+  if(apiOn()){
+    API.post("/otp",{phone:$("phone").value}).then(function(r){
+      if(r&&r.ok){ phoneServer=true; phoneSent=r.demo_code; showPhoneSent(); }
+      else sendLocal();
+    }).catch(sendLocal);
+    return;
+  }
+  sendLocal();
+};
+function showPhoneSent(){
+  $("phoneSentWrap").classList.remove("hidden");
+  $("phoneSentMsg").textContent="Code sent to "+$("phone").value+".";
+  setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);
+  timer($("phoneTimer"),30); $("phoneErr").textContent="";
+}
+$("resendPhone").onclick=function(e){ e.preventDefault();
+  function rl(){ phoneServer=false; phoneSent=rnd(); setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900); timer($("phoneTimer"),30); }
+  if(apiOn()){ API.post("/otp",{phone:$("phone").value}).then(function(r){ if(r&&r.ok){phoneServer=true;phoneSent=r.demo_code;setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);timer($("phoneTimer"),30);} else rl(); }).catch(rl); }
+  else rl();
+};
+function phoneOK(){
+  $("s1").querySelector("b").textContent="Phone verified ✓";
+  openCountry();
+}
+$("verifyPhone").onclick=function(){
+  var code=otpVal($("phoneOtp"));
+  if(phoneServer&&apiOn()){
+    API.post("/verify",{phone:$("phone").value,code:code}).then(function(r){
+      if(r&&r.ok) phoneOK();
+      else { attempts++; $("phoneErr").textContent=(r&&r.error)||"That code doesn't match. Check and try again."; }
+    }).catch(function(){ $("phoneErr").textContent="Couldn't reach the server. Try again."; });
+    return;
+  }
+  if(code===phoneSent&&phoneSent){ phoneOK(); }
+  else { attempts++; $("phoneErr").textContent=attempts>=3?"Too many tries. Please request a new code.":"That code doesn't match. Check and try again."; }
+};
+function fillCountries(sel,val){ sel.innerHTML=""; TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; sel.appendChild(o); }); sel.value=val; }
+function fillCurs(sel,val){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code+" — "+c.name; sel.appendChild(o); }); sel.value=val; }
+function paintCurList(){
+  $("curList").innerHTML=chosen.map(function(code){ var c=TREX.getCurrency(code); return "<span class='curpill'>"+c.flag+" "+code+"</span>"; }).join("");
+}
+function openCountry(){
+  $("d1").className="step-dot done"; $("d2").className="step-dot on";
+  $("sCountry").classList.remove("hidden");
+  var d=TREX.detectCountry({phone:$("phone").value});
+  fillCountries($("country"));
+  if(d.country){
+    var g=TREX.getCountry(d.country);
+    $("country").value=d.country;
+    $("detectMsg").textContent="We detected "+g.flag+" "+g.name+" ("+d.confidence+" confidence). We've added "+g.currency+" to your dashboard — change anything you like.";
+    chosen=TREX.defaultSet(d.country);
+  } else {
+    $("detectMsg").textContent="We couldn't confidently determine your country. Please select it.";
+    chosen=TREX.defaultSet("NG");
+  }
+  fillCurs($("addCur"),"USD"); paintCurList();
+  $("sCountry").scrollIntoView({behavior:"smooth"});
+}
+$("addCur").onchange=function(){ var c=$("addCur").value; if(chosen.indexOf(c)<0){chosen.push(c); paintCurList();} };
+$("countryGo").onclick=function(){
+  var cc=$("country").value, g=TREX.getCountry(cc);
+  if(chosen.indexOf(g.currency)<0)chosen.unshift(g.currency);
+  TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,phone:$("phone").value,recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
+  $("d2").className="step-dot done"; $("d3").className="step-dot on";
+  $("s2").classList.remove("hidden"); $("sCountry").querySelector("b").textContent="Country saved ✓";
+  $("s2").scrollIntoView({behavior:"smooth"});
+};
+$("sendEmailOtp").onclick=function(){
+  if($("email").value.indexOf("@")<0){ $("emailErr").textContent="Enter a valid email address."; return; }
+  function el(){ emailServer=false; emailSent=rnd(); $("emailSentWrap").classList.remove("hidden"); setTimeout(function(){fillOtp($("emailOtp"),emailSent);},900); }
+  if(apiOn()){
+    API.post("/otp",{email:$("email").value}).then(function(r){
+      if(r&&r.ok&&r.email_sent){ emailServer=true; $("emailSentWrap").classList.remove("hidden"); $("emailErr").textContent="Code sent — check your inbox, then enter it here."; }
+      else if(r&&r.ok){ emailServer=true; emailSent=r.demo_code; $("emailSentWrap").classList.remove("hidden"); setTimeout(function(){fillOtp($("emailOtp"),emailSent);},900); }
+      else { emailServer=false; $("emailErr").textContent=(r&&r.error)||"Couldn't send the email. Try again."; }
+    }).catch(el);
+    return;
+  }
+  el();
+};
+function emailOK(){ $("d3").className="step-dot done"; $("d4").className="step-dot on"; $("s3").classList.remove("hidden"); $("s3").scrollIntoView({behavior:"smooth"}); }
+$("verifyEmail").onclick=function(){
+  var code=otpVal($("emailOtp"));
+  if(emailServer&&apiOn()){
+    API.post("/verify",{email:$("email").value,code:code}).then(function(r){
+      if(r&&r.ok) emailOK();
+      else $("emailErr").textContent=(r&&r.error)||"That code doesn't match. Try again.";
+    }).catch(function(){ $("emailErr").textContent="Couldn't reach the server. Try again."; });
+    return;
+  }
+  if(code===emailSent&&emailSent){ emailOK(); }
+  else $("emailErr").textContent="That code doesn't match. Try again.";
+};
+$("finishPersonal").onclick=function(){
+  if(!$("fullName").value||$("pin").value.length!==4){ alert("Add your name and a 4-digit PIN."); return; }
+  try{ var v=TREX.load("trex_verify",{}); v.phone=true;v.email=true;v.liveness=!!$("selfie").value;v.pin=true; TREX.store("trex_verify",v); }catch(e){}
+  $("tierBox").classList.remove("hidden"); $("s4").classList.remove("hidden");
+  var p=prof(); fillCurs($("limitCur"),p.localCurrency||"NGN");
+  $("d4").className="step-dot done"; $("d5").className="step-dot on"; $("s4").scrollIntoView({behavior:"smooth"});
+};
+function bondText(){
+  var m=$("bondModel").value, lim=Number($("limit").value)||0, cur=$("limitCur").value||"NGN";
+  $("bondCalc").innerHTML=m==="standing"
+    ?("Your bond: <b>"+TREX.fmtMoney(Math.round(lim*0.25*100)/100,cur)+"</b> (25% of your "+TREX.fmtMoney(lim,cur)+" limit). Fully refundable.")
+    :("Your bond: <b>50% of each trade</b> in "+cur+", held only while that trade is open.");
+}
+$("bondModel").onchange=bondText; $("limit").oninput=bondText;
+function finish(asVendor){
+  if(asVendor&&!$("accept").checked){ alert("Please accept the trading rules first."); return; }
+  $("done").classList.remove("hidden");
+  var p=prof();
+  $("summary").textContent=$("fullName").value+" • "+(p.localCurrency||"")+" + USD, GBP, EUR ready"+(asVendor?" • vendor":"");
+  try{ var v=TREX.load("trex_verify",{}); v.vendor=asVendor; TREX.store("trex_verify",v);}catch(e){}
+  TREX.audit("Signup completed"+(asVendor?" (vendor)":""));
+  $("done").scrollIntoView({behavior:"smooth"});
+}
+$("finishVendor").onclick=function(){finish(true);};
+$("skipVendor").onclick=function(){finish(false);};
+</script>
+</body>
+</html>
