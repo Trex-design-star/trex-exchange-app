@@ -1,0 +1,271 @@
+// Trex domain model (Postgres). Auth tables are Better Auth's canonical
+// shape; Trex profile data lives in Profile linked by userId.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phoneNumber   String?   @unique
+  phoneVerified Boolean   @default(false)
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  profile       Profile?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId String
+  accountId  String
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Profile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  countryCode      String   @default("NG")
+  localCurrency    String   @default("NGN")
+  preferredCurrency String  @default("NGN")
+  displayCurrency  String   @default("NGN")
+  enabledCurrencies String[] @default(["NGN", "USD", "GBP", "EUR"])
+  favorites        String[] @default([])
+  watchlist        String[] @default([])
+  tier             String   @default("PROBATION")
+  vendorStatus     String   @default("NONE")
+  livenessOk       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CurrencyBalance {
+  id        String @id @default(cuid())
+  profileId String
+  currency  String
+  // Minor units only — never floats for money.
+  available Int @default(0)
+  pending   Int @default(0)
+  @@unique([profileId, currency])
+}
+
+model VendorOffer {
+  id        String   @id @default(cuid())
+  vendorId  String
+  provide   String
+  want      String
+  // Rate: units of want per 1 unit of provide, stored as text for precision.
+  rate      Decimal  @db.Decimal(24, 8)
+  minMinor  Int
+  maxMinor  Int
+  minCcy    String   @default("PROVIDE")
+  methods   String[] @default(["Bank transfer"])
+  terms     String   @default("")
+  avail     String   @default("online")
+  tier      String   @default("Probation")
+  capacityMinor Int
+  capacityCcy   String
+  live      Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trades    Trade[]
+}
+
+model Bond {
+  id     String @id @default(cuid())
+  vendorId String @unique
+  model  String @default("standing")
+  base   String @default("USD")
+  caps   Json   @default("{}")
+  switchedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events BondEvent[]
+}
+
+model BondEvent {
+  id        String   @id @default(cuid())
+  bondId    String
+  bond      Bond     @relation(fields: [bondId], references: [id], onDelete: Cascade)
+  kind      String
+  // Signed minor units: reserve(-), release(+), topup(+), forfeit(-), refund(+).
+  amount    Int
+  currency  String
+  tradeId   String?
+  idemKey   String?  @unique
+  createdAt DateTime @default(now())
+  @@index([bondId, currency])
+}
+
+model Trade {
+  id         String   @id @default(cuid())
+  offerId    String
+  offer      VendorOffer @relation(fields: [offerId], references: [id])
+  customerId String
+  vendorId   String
+  sellCcy    String
+  recvCcy    String
+  // Amounts in minor units of their own currency.
+  sendMinor  Int
+  recvMinor  Int
+  // Amount locked against the vendor's capacity, in provide-currency minor.
+  lockMinor  Int      @default(0)
+  feeMinor   Int      @default(0)
+  rate       Decimal  @db.Decimal(24, 8)
+  feePct     Decimal  @db.Decimal(6, 3) @default(1.5)
+  state      String   @default("opened")
+  proofUrl   String?
+  method     String?
+  idemKey    String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  messages   Message[]
+  dispute    Dispute?
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  tradeId   String
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  from      String
+  text      String
+  attachUrl String?
+  createdAt DateTime @default(now())
+}
+
+model Dispute {
+  id          String    @id @default(cuid())
+  tradeId     String    @unique
+  trade       Trade     @relation(fields: [tradeId], references: [id])
+  state       String    @default("OPEN")
+  resolution  String?
+  secondBy    String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  evidence    Evidence[]
+}
+
+model Evidence {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  kind      String
+  url       String?
+  text      String?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  tradeId    String?
+  direction  String
+  currency   String
+  amountMinor Int
+  method     String?
+  reference  String?  @unique
+  status     String   @default("pending")
+  raw        Json?
+  createdAt  DateTime @default(now())
+}
+
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  kind      String
+  tradeId   String?
+  amount    Int
+  currency  String
+  meta      Json?
+  idemKey   String?  @unique
+  createdAt DateTime @default(now())
+  @@index([kind, currency])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  profileId String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  profileId String?
+  category  String   @default("General")
+  title     String
+  state     String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RiskEvent {
+  id        String   @id @default(cuid())
+  kind      String
+  actorId   String?
+  verdict   String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model FeeRule {
+  id        String  @id @default(cuid())
+  scope     String  @default("global")
+  pct       Decimal @db.Decimal(6, 3) @default(1.5)
+  minMinor  Int     @default(0)
+  maxMinor  Int     @default(0)
+  currency  String  @default("USD")
+  active    Boolean @default(true)
+}
+
+model MarketRule {
+  id        String   @id @default(cuid())
+  kind      String
+  target    String
+  state     String
+  reason    String?
+  actorId   String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+  @@index([action])
+}
