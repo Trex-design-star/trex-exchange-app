@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trex — Your protection</title>
+<script src="js/trex.js"></script>
+<style>
+  :root{--black:#0B0D12;--blue:#155EEF;--blue-dark:#0B2FB3;--blue-soft:#E4EBFF;
+    --brown:#8C5A2B;--brown-soft:#F4E9D8;--green:#027A48;--green-soft:#DCFAE6;
+    --ink:#0B0D12;--muted:#4B5563;--bg:#2A0A54;--card:#fff;--line:#E4E0D6;--radius:14px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:680px;margin:0 auto;padding:16px 14px 96px}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:4px 2px 12px;font-size:14px}
+  .nav b{letter-spacing:.08em;color:#fff}
+  .nav a{color:#B9CCFF;text-decoration:none;font-weight:600;margin-left:12px}
+  .prev{display:inline-block;font-size:11px;font-weight:700;background:var(--brown-soft);color:var(--brown);border-radius:999px;padding:3px 10px;margin-bottom:8px}
+  .top{background:var(--black);color:#fff;border-radius:var(--radius);padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0}
+  .muted{color:var(--muted);font-size:13px}
+  .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-block}
+  .b-ok{background:var(--green-soft);color:var(--green)}
+  .b-brown{background:var(--brown-soft);color:var(--brown)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .cap{border:1px solid var(--line);border-radius:12px;padding:12px}
+  .bar{height:10px;background:#EDE9DE;border-radius:999px;overflow:hidden;margin:8px 0}
+  .bar i{display:block;height:100%;background:var(--blue)}
+  label{font-size:13px;font-weight:700;display:block;margin:12px 0 4px}
+  input,select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px}
+  .btn{width:100%;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
+  .btn-blue{background:var(--blue);color:#fff}
+  .btn-black{background:var(--black);color:#fff}
+  .btn-line{background:#fff;border:2px solid var(--black);color:var(--black)}
+  .log{background:#0B0D12;color:#D1D5DB;border-radius:10px;padding:12px;font-size:12px;white-space:pre-line;min-height:80px}
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex}
+  .bottomnav a{flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none}
+  .bottomnav a.on{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><b>TREX</b><span><a href="dashboard.html">Home</a><a href="offers.html">Offers</a></span></div>
+  <span class="prev">Preview — sample figures, no real money moves</span>
+  <div class="top">
+    <h2 style="margin:0 0 6px">Your protection</h2>
+    <div class="muted" style="color:#C7CBD1">A refundable deposit in each currency you sell. It guarantees your buyers get what they paid for.</div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b id="modelName">Standing plan — 25%</b><span class="badge b-brown" id="modelBadge">STANDING</span></div>
+    <p class="muted">Two plans: <b>Standing</b> (25% of your limits, always ready) or <b>Per-trade</b> (50% held only while a trade is open). Switching needs no open trades and a 72-hour gap.</p>
+    <button class="btn btn-line" id="switchModel">Switch plan</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>Protection capacity</b><span class="badge b-ok">All covered ✓</span></div>
+    <div class="grid" id="capGrid" style="margin-top:8px"></div>
+    <div class="muted" id="convNote"></div>
+  </div>
+
+  <div class="card">
+    <b>Top up</b>
+    <p class="muted">Send money to your dedicated Trex account. We confirm it and credit the right currency — fees always shown separately.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label>Currency</label><select id="topCur"></select></div>
+      <div><label>Amount</label><input id="topAmt" type="number" value="1000"></div>
+    </div>
+    <div class="muted" id="topInfo"></div>
+    <button class="btn btn-black" id="topBtn">I've sent the transfer</button>
+    <div class="log" id="inLog">Waiting for your transfer…</div>
+  </div>
+
+  <div class="card">
+    <b>Withdraw</b>
+    <p class="muted">Available anytime you have no open trades in that currency. Large withdrawals need a second approval.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label>Currency</label><select id="relCur"></select></div>
+      <div><label>Amount</label><input id="relAmt" type="number" value="500"></div>
+    </div>
+    <button class="btn btn-blue" id="relBtn">Withdraw</button>
+    <div class="log" id="outLog">No withdrawals yet.</div>
+  </div>
+</div>
+<nav class="bottomnav"><a href="dashboard.html">Home</a><a href="trade.html">Trade</a><a href="offers.html" class="on">Sell</a><a href="settings.html">Profile</a><a href="more.html">More</a></nav>
+<script>
+var $=function(id){return document.getElementById(id);};
+var bond=TREX.load("trex_bond",{model:"standing",base:"USD",caps:{USD:10000,NGN:8000000,GBP:4000,EUR:6000},used:{}});
+function save(){ TREX.store("trex_bond",bond); }
+function fillCur(sel){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code; sel.appendChild(o); }); }
+function paint(){
+  $("modelName").textContent=bond.model==="standing"?"Standing plan — 25%":"Per-trade plan — 50%";
+  $("modelBadge").textContent=bond.model.toUpperCase();
+  var g=$("capGrid"); g.innerHTML="";
+  Object.keys(bond.caps).forEach(function(code){
+    var cap=bond.caps[code], used=bond.used[code]||0, c=TREX.getCurrency(code);
+    var d=document.createElement("div"); d.className="cap";
+    d.innerHTML="<div style='font-size:20px'>"+(c?c.flag:"")+"</div><b>"+code+"</b><div style='font-size:18px;font-weight:800'>"+TREX.fmt(cap-used,code)+"</div><div class='muted'>available of "+TREX.fmt(cap,code)+"</div><div class='bar'><i style='width:"+Math.round(used/Math.max(cap,1)*100)+"%'></i></div>";
+    g.appendChild(d);
+  });
+  var base=bond.base;
+  $("convNote").textContent="Capacities convert from your "+base+" base at the current reference rate — every conversion shows its basis. Never mixed silently.";
+  $("topInfo").textContent="Account: ••4210 in your name • Expected: "+$("topAmt").value+" "+$("topCur").value+" protection + fee shown separately";
+}
+["topCur","relCur"].forEach(function(id){ fillCur($(id)); });
+$("topCur").value="USD"; $("relCur").value="USD";
+$("topCur").onchange=$("topAmt").oninput=function(){ $("topInfo").textContent="Account: ••4210 in your name • Expected: "+$("topAmt").value+" "+$("topCur").value+" protection + fee shown separately"; };
+paint();
+$("topBtn").onclick=function(){
+  var c=$("topCur").value, a=Number($("topAmt").value)||0;
+  bond.caps[c]=(bond.caps[c]||0)+a; save(); paint();
+  $("inLog").textContent="Transfer received ✓\n+"+TREX.fmtMoney(a,c)+" credited to your "+c+" protection.";
+  TREX.audit("Bond topped up "+a+" "+c);
+};
+$("relBtn").onclick=function(){
+  var c=$("relCur").value, a=Number($("relAmt").value)||0;
+  var free=(bond.caps[c]||0)-(bond.used[c]||0);
+  if(a>free){ $("outLog").textContent="That exceeds your free "+c+" balance ("+TREX.fmtMoney(free,c)+")."; return; }
+  bond.caps[c]-=a; save(); paint();
+  var ref="REF-"+Date.now().toString(36).toUpperCase();
+  $("outLog").textContent="Withdrawal "+ref+": "+TREX.fmtMoney(a,c)+" sent to your bank. ✓"+(a>5000?"\nLarge amount — second approval recorded.":"");
+  TREX.audit("Bond withdrawal "+a+" "+c+" "+ref);
+};
+$("switchModel").onclick=function(){
+  var busy=Object.keys(bond.used).some(function(k){return (bond.used[k]||0)>0;});
+  if(busy){ alert("Finish your open trades first — switching only affects future trades."); return; }
+  var last=TREX.load("trex_switch",0);
+  if(Date.now()-last<72*3600*1000){ alert("You can switch plans again after 72 hours."); return; }
+  TREX.store("trex_switch",Date.now());
+  bond.model=bond.model==="standing"?"pertrade":"standing"; save(); paint();
+  toast2("Switched. Your history and level carry over.");
+  function toast2(m){ $("outLog").textContent=m; }
+};
+</script>
+</body>
+</html>
