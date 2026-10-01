@@ -1,0 +1,12 @@
+# Local demo data (your browser + API state — never push)
+data/
+# Secrets (never push keys)
+.env
+backend/.env
+web/.env.local
+# Future Node installs
+node_modules/
+backend/dist/
+web/.next/
+# macOS noise
+.DS_Store
