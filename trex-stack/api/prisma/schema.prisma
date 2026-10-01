@@ -1,0 +1,124 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+model User {
+  id          String   @id @default(cuid())
+  phone       String?  @unique
+  email       String?  @unique
+  name        String?
+  countryCode String   @default("NG")
+  localCurr   String   @default("NGN")
+  preferred   String   @default("NGN")
+  displayCcy  String   @default("NGN")
+  enabled     String[] @default(["NGN", "USD", "GBP", "EUR"])
+  favorites   String[] @default([])
+  tier        String   @default("Starter")
+  vendor      Boolean  @default(false)
+  suspended   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  offers      Offer[]
+  trades      Trade[]  @relation("CustomerTrades")
+}
+
+model OtpCode {
+  target   String @id
+  code     String
+  exp      DateTime
+  attempts Int    @default(0)
+}
+
+model Offer {
+  id       String  @id @default(cuid())
+  vendorId String
+  vendor   User    @relation(fields: [vendorId], references: [id])
+  provide  String
+  want     String
+  rate     Float
+  min      Float
+  max      Float
+  capacity Float   @default(5000)
+  methods  String[] @default(["Bank transfer"])
+  terms    String  @default("")
+  live     Boolean @default(true)
+  trades   Trade[]
+  createdAt DateTime @default(now())
+}
+
+model Trade {
+  id        String  @id @default(cuid())
+  offerId   String
+  offer     Offer   @relation(fields: [offerId], references: [id])
+  buyerId   String
+  buyer     User    @relation("CustomerTrades", fields: [buyerId], references: [id])
+  sell      String
+  recv      String
+  amount    Float   // in provide currency (minor-unit math enforced in service)
+  rate      Float
+  feePct    Float   @default(1.5)
+  state     String  @default("opened")
+  proofUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Append-only. No updates or deletes — ever.
+model BondEvent {
+  id        String   @id // = idempotency key (evt_...)
+  vendorId  String
+  kind      String   // reserve | release | refund | forfeit | topup
+  tradeId   String?
+  amountMinor BigInt
+  ccy       String
+  createdAt DateTime @default(now())
+}
+
+model Dispute {
+  id         String   @id @default(cuid())
+  tradeId    String   @unique
+  pair       String
+  amount     Float
+  ccy        String
+  proofUrl   String?
+  evidence   String   @default("")
+  state      String   @default("OPEN")
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+}
+
+model Rating {
+  id      String   @id @default(cuid())
+  tradeId String
+  stars   Int
+  createdAt DateTime @default(now())
+}
+
+model Ticket {
+  id    String @id @default(cuid())
+  cat   String @default("General")
+  title String
+  state String @default("OPEN")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id      String   @id @default(cuid())
+  actor   String
+  event   String
+  createdAt DateTime @default(now())
+}
+
+model IdempotencyKey {
+  key       String @id
+  response  Json
+  createdAt DateTime @default(now())
+}
+
+model AdminConfig {
+  id          Int    @id @default(1)
+  feePct      Float  @default(1.5)
+  confirmMins Int    @default(30)
+  graceHours  Int    @default(24)
+  thresh      Float  @default(500000)
+  disabled    String[] @default([])
+  pausedPairs String[] @default([])
+}
