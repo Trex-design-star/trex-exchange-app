@@ -91,6 +91,15 @@ rescue StandardError => e
   { sent: false, reason: 'error', error: e.message.to_s[0, 120] }
 end
 
+# Trade email: sends when Resend is live, otherwise records the attempt in
+# the audit log so nothing is silently "sent". Never raises.
+def trade_email(trade, subject, text)
+  to = trade['email'].to_s.strip
+  return if to.empty?
+  r = resend_send(to, subject, text)
+  audit!("Email to #{to}: #{subject} (#{r[:sent] ? 'sent' : 'queued-no-key'})")
+end
+
 def send_json(res, obj, status = 200)
   res.status = status
   res['Content-Type'] = 'application/json'
@@ -244,6 +253,7 @@ server.mount_proc('/api') do |req, res|
         trades = read_json('trades.json', [])
         t = { 'id' => 'TXN-' + SecureRandom.hex(4).upcase, 'offer_id' => o['id'],
               'sell' => b['sell'], 'recv' => b['recv'], 'amount' => amt,
+              'email' => b['email'].to_s.strip,
               'provide' => o['provide'], 'rate' => o['rate'], 'fee_pct' => read_json('config.json', {})['fee_pct'] || 1.5,
               'state' => 'opened', 'proof' => nil, 'chat' => [], 'created_at' => Time.now.utc.iso8601 }
         trades << t
@@ -253,6 +263,8 @@ server.mount_proc('/api') do |req, res|
                     'amount' => amt, 'ccy' => o['provide'], 'at' => Time.now.utc.iso8601 }
         write_json('ledger.json', ledger)
         audit!("Trade opened #{t['id']}")
+        trade_email(t, "Your #{b['sell']}→#{b['recv']} trade is open",
+          "Trade #{t['id']} for #{amt} #{b['sell']} is open and bond-protected. Reply to this email if you need help.")
         { 'ok' => true, 'trade' => t }
       end
 
@@ -299,6 +311,17 @@ server.mount_proc('/api') do |req, res|
         end
         write_json('trades.json', trades)
         audit!("Trade #{t['id']} → #{t['state']}")
+        pair = "#{t['sell']}→#{t['recv']}"
+        case t['state']
+        when 'completed'
+          trade_email(t, "Receipt #{t['id']} — your #{pair} trade is complete",
+            "You sent #{t['amount']} #{t['sell']} and received #{t['recv']} at #{t['rate']}. Protection honoured. Ref #{t['id']}.")
+        when 'disputed'
+          trade_email(t, "Your #{pair} trade is under review",
+            "Trade #{t['id']} is paused. Our team reviews the chat and receipts — usually within 24 hours.")
+        when 'cancelled'
+          trade_email(t, "Trade #{t['id']} cancelled", "Cancelled before payment. Nothing left your account.")
+        end
         { 'ok' => true, 'trade' => t }
       end
 
@@ -335,6 +358,10 @@ server.mount_proc('/api') do |req, res|
           write_json('ledger.json', ledger)
         end
         audit!("Dispute #{d['id']} resolved #{b['how']}")
+        if t
+          trade_email(t, "Review complete — trade #{t['id']}",
+            b['how'] == 'VENDOR-AT-FAULT' ? "Decided in your favour. Compensation comes from the vendor's bond." : "Decided: #{b['how']}. Details in your Trex history.")
+        end
         { 'ok' => true, 'dispute' => d }
       end
 
