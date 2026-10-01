@@ -1,0 +1,194 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+model User {
+  id            String   @id @default(cuid())
+  phone         String?  @unique
+  email         String?  @unique
+  name          String?
+  countryCode   String   @default("NG")
+  localCurrency String   @default("NGN")
+  preferred     String   @default("NGN")
+  displayCcy    String   @default("NGN")
+  enabled       String[] @default(["NGN", "USD", "GBP", "EUR"])
+  favorites     String[] @default([])
+  watchlist     String[] @default([])
+  tier          String   @default("Starter")
+  vendor        Boolean  @default(false)
+  suspended     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  sessions      Session[]
+  balances      Balance[]
+  offers        Offer[]
+  trades        Trade[]  @relation("CustomerTrades")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  device    String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  target    String
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([target])
+}
+
+model CurrencyStatus {
+  code   String @id
+  status String @default("LIVE") // LIVE | LIMITED | PAUSED | COMING_SOON | DISABLED
+}
+
+model PairStatus {
+  pair   String @id // "USD-NGN"
+  status String @default("LIVE") // LIVE | PAUSED
+}
+
+model Balance {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency  String
+  available BigInt @default(0) // minor units
+  pending   BigInt @default(0)
+  @@unique([userId, currency])
+}
+
+model Offer {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    User     @relation(fields: [vendorId], references: [id])
+  provide   String
+  want      String
+  rate      Decimal  @db.Decimal(24, 8) // want per 1 provide
+  min       Decimal  @db.Decimal(24, 8)
+  max       Decimal  @db.Decimal(24, 8)
+  capacity  Decimal  @db.Decimal(24, 8) // in provide currency
+  reserved  Decimal  @default(0) @db.Decimal(24, 8)
+  methods   String[] @default(["Bank transfer"])
+  terms     String   @default("")
+  avail     String   @default("Online now")
+  live      Boolean  @default(true)
+  trades    Trade[]
+  createdAt DateTime @default(now())
+}
+
+model Trade {
+  id        String   @id // TXN-XXXXXXXX, client-safe reference
+  offerId   String
+  offer     Offer    @relation(fields: [offerId], references: [id])
+  customerId String
+  customer  User     @relation("CustomerTrades", fields: [customerId], references: [id])
+  sell      String
+  recv      String
+  amount    Decimal  @db.Decimal(24, 8) // in provide currency
+  rate      Decimal  @db.Decimal(24, 8)
+  feePct    Decimal  @default(1.5) @db.Decimal(6, 3)
+  state     String   @default("opened")
+  proofUrl  String?
+  createdAt DateTime @default(now())
+  events    TradeEvent[]
+  dispute   Dispute?
+}
+
+model TradeEvent {
+  id      String   @id @default(cuid())
+  tradeId String
+  trade   Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  actor   String
+  from    String
+  to      String
+  note    String?
+  at      DateTime @default(now())
+  @@index([tradeId])
+}
+
+model BondEvent {
+  id        String   @id // evt_* = Paystack idempotency reference
+  vendorId  String
+  kind      String // reserve | release | refund | forfeit | topup
+  amount    Decimal  @db.Decimal(24, 8)
+  ccy       String
+  tradeId   String?
+  createdAt DateTime @default(now())
+  @@index([vendorId])
+}
+
+model Dispute {
+  id         String   @id
+  tradeId    String   @unique
+  trade      Trade    @relation(fields: [tradeId], references: [id])
+  pair       String
+  state      String   @default("OPEN")
+  resolvedAs String?
+  secondBy   String?
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+  evidence   Evidence[]
+}
+
+model Evidence {
+  id        String  @id @default(cuid())
+  disputeId String
+  dispute   Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  kind      String // chat | receipt | note
+  url       String?
+  text      String?
+  createdAt DateTime @default(now())
+}
+
+model Rating {
+  id      String   @id @default(cuid())
+  tradeId String
+  score   Int
+  createdAt DateTime @default(now())
+}
+
+model Ticket {
+  id        String   @id
+  userId    String?
+  cat       String   @default("General")
+  title     String
+  state     String   @default("OPEN")
+  createdAt DateTime @default(now())
+}
+
+model FeeRule {
+  id     String @id @default(cuid())
+  scope  String @unique @default("global") // global | pair:USD-NGN | ...
+
+  pct    Decimal @default(1.5) @db.Decimal(6, 3)
+  min    Decimal @default(0) @db.Decimal(24, 8)
+  max    Decimal @default(0) @db.Decimal(24, 8)
+}
+
+model IdempotencyKey {
+  key       String   @id
+  response  Json
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  event     String
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+model WebhookEvent {
+  id        String   @id // provider event id — replay-safe
+  provider  String   @default("paystack")
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
