@@ -83,6 +83,8 @@
     </div>
     <label>Amount you send</label>
     <input id="amt" type="number" value="500" min="1" />
+    <label>Email for receipt &amp; updates (optional)</label>
+    <input id="temail" type="email" placeholder="you@example.com" />
     <div class="muted" id="capLine"></div>
     <label>Payment receipt</label>
     <input id="proof" placeholder="e.g. receipt.png" />
@@ -252,7 +254,7 @@ function openTrade(o,sell,recv){
     showTrade();
   }
   if(window.API&&API.on){
-    API.post("/trades",{offer_id:o.id,sell:sell,recv:recv,amount:need},API.key()).then(function(r){
+    API.post("/trades",{offer_id:o.id,sell:sell,recv:recv,amount:need,email:$("temail").value||""},API.key()).then(function(r){
       if(r&&r.ok){ current={offer:o,sell:sell,recv:recv,amt:amt,ref:r.trade.id,serverId:r.trade.id}; showTrade(); }
       else toast((r&&r.error)||"Offer unavailable right now.");
     }).catch(goLocal);
