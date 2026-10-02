@@ -66,12 +66,8 @@ export class BondService {
     return { caps, reference, transfer: transfer.transfer_code };
   }
 
-  async switchModel(vendorId: string) {
-    if (await this.lockedTotal(vendorId)) throw new BadRequestException('Finish open trades first.');
-    const bond = await this.bondFor(vendorId);
-    if (bond.switchedAt && Date.now() - bond.switchedAt.getTime() < SWITCH_COOLDOWN_MS)
-      throw new BadRequestException('You can switch plans again after 72 hours.');
-    const model = bond.model === 'standing' ? 'pertrade' : 'standing';
-    return this.prisma.bond.update({ where: { id: bond.id }, data: { model, switchedAt: new Date() } });
+  async switchModel(_vendorId: string): Promise<never> {
+    // Removed 2 Oct 2026 (decision 17): per-trade 50% is the only model.
+    throw new BadRequestException('Trex uses one bond model: 50% per trade. Nothing to switch.');
   }
 }
