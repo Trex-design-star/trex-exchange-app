@@ -434,6 +434,7 @@ Priority key: **P0** = MVP, **P1** = Phase 2, **P2** = later.
 | 17 | 2 Oct 2026 | Founder directive: ONE bond model only — per-trade 50% of each order's value, locked per trade and released on delivery. Standing bond and model-switching are removed; vendor landing + 50% rule + do's and don'ts added |
 | 18 | 2 Oct 2026 | Founder directive: vendors are customers first — no second signup; vendor CTA goes to offers; vendor profiles carry photo, bio, country, reply pledge, languages and verification badges so no vendor is anonymous |
 | 19 | 2 Oct 2026 | Resend email delivery LIVE — real inbox code verified end to end via /api/verify; trade receipts and review notices deliver for real |
+| 20 | 2 Oct 2026 | Global SMS via Better Auth phone OTP + Twilio sender (all dialling codes in signup); wired with honest preview fallback until Twilio keys land |
 
 ## 15. Parking lot
 
