@@ -36,9 +36,13 @@ append-only ledger (`reserve → release/refund/forfeit`) and audit trail.
   sends a real code when the server starts with a key:
   `RESEND_API_KEY=re_xxx RESEND_FROM="Trex <hello@yourdomain>" ruby api.rb 8080`.
   Without a key it returns a preview `demo_code`; with a key the code
-  lives ONLY in the inbox — never in the response. Status:
-  `GET /api/integrations` → `{resend, sms, paystack}`.
-- **SMS, Paystack:** not connected (`false` above). Next in line.
+  lives ONLY in the inbox — never in the response.
+- **SMS via Twilio behind Better Auth phone OTP: wired, awaiting keys.**
+  `POST /api/otp {phone}` (full E.164 from the 200+ dial-code picker)
+  sends a real SMS when started with `TWILIO_SID`, `TWILIO_TOKEN`,
+  `TWILIO_FROM`; otherwise preview fallback. Verify always server-side.
+- Status: `GET /api/integrations` → `{resend, sms, paystack}`.
+- **Paystack:** not connected (`false` above). Next in line.
 
 ## Porting to NestJS + Postgres (chosen stack)
 
