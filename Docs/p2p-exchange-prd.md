@@ -104,7 +104,11 @@ flowchart TD
 
 ## 6. The vendor bond, in full
 
-### 6.1 Structure: vendors choose per-trade or standing
+### 6.1 Structure: per-trade bond only (founder directive, decision 17)
+
+> Every order locks **50% of that order's value** as bond for that trade
+> alone — released on delivery, forfeited to the customer on vendor fault.
+> The standing-bond model and model-switching (former §6.1.3) are removed.
 
 Vendors pick whichever bond model fits how they trade, and can switch later (section 6.1.3).
 
@@ -427,6 +431,7 @@ Priority key: **P0** = MVP, **P1** = Phase 2, **P2** = later.
 | 14 | 28 Sep 2026 | Founder stack: Next.js app, NestJS API, PostgreSQL, Better Auth only + Resend for email, Cloudflare R2, Paystack |
 | 15 | 29 Sep 2026 | Founder update: Termii removed; auth is Better Auth only, email via Resend |
 | 16 | 1 Oct 2026 | Founder directive: Trex is global, not Nigeria-only — central currency/country registries, auto country + local-currency detection, USD/GBP/EUR defaults, full multi-currency marketplace, bond, trade, admin and launch architecture (NGN is one supported currency) |
+| 17 | 2 Oct 2026 | Founder directive: ONE bond model only — per-trade 50% of each order's value, locked per trade and released on delivery. Standing bond and model-switching are removed; vendor landing + 50% rule + do's and don'ts added |
 
 ## 15. Parking lot
 
