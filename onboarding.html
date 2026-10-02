@@ -120,9 +120,8 @@
   <div class="card hidden" id="s4">
     <b>Sell currency as a vendor? (optional)</b>
     <p class="muted">Vendors back every trade with a refundable bond. Skip this if you only want to trade.</p>
-    <label>Bond plan</label>
-    <select id="bondModel"><option value="standing">Standing bond — 25% of your trading limit (best if you trade often)</option><option value="pertrade">Per-trade bond — 50% of each trade (best if you trade occasionally)</option></select>
-    <label>Trading limit</label>
+    <div class="bondbox"><b>Per-trade bond — 50% of every order.</b> Each customer order locks half its value as your bond for that trade alone. Deliver, and it comes straight back. Nothing sits locked between trades.</div>
+    <label>Largest order you'll accept (so you can see the bond)</label>
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px"><input id="limit" type="number" value="10000" min="100" step="100"><select id="limitCur"></select></div>
     <div class="bondbox" id="bondCalc"></div>
     <label>Bank account for bond refunds</label>
@@ -262,17 +261,15 @@ $("finishPersonal").onclick=function(){
   $("d4").className="step-dot done"; $("d5").className="step-dot on"; $("s4").scrollIntoView({behavior:"smooth"});
 };
 function bondText(){
-  var m=$("bondModel").value, lim=Number($("limit").value)||0, cur=$("limitCur").value||"NGN";
-  $("bondCalc").innerHTML=m==="standing"
-    ?("Your bond: <b>"+TREX.fmtMoney(Math.round(lim*0.25*100)/100,cur)+"</b> (25% of your "+TREX.fmtMoney(lim,cur)+" limit). Fully refundable.")
-    :("Your bond: <b>50% of each trade</b> in "+cur+", held only while that trade is open.");
+  var lim=Number($("limit").value)||0, cur=$("limitCur").value||"NGN";
+  $("bondCalc").innerHTML="Example: a "+TREX.fmtMoney(lim,cur)+" order locks <b>"+TREX.fmtMoney(Math.round(lim*0.5*100)/100,cur)+"</b> until you deliver.";
 }
-$("bondModel").onchange=bondText; $("limit").oninput=bondText;
+$("limit").oninput=bondText;
 function finish(asVendor){
   if(asVendor&&!$("accept").checked){ alert("Please accept the trading rules first."); return; }
   $("done").classList.remove("hidden");
   var p=prof();
-  $("summary").textContent=$("fullName").value+" • "+(p.localCurrency||"")+" + USD, GBP, EUR ready"+(asVendor?" • vendor":"");
+  $("summary").textContent=$("fullName").value+" • "+(p.localCurrency||"")+" + USD, GBP, EUR ready"+(asVendor?" • per-trade vendor":"");
   try{ var v=TREX.load("trex_verify",{}); v.vendor=asVendor; TREX.store("trex_verify",v);}catch(e){}
   TREX.audit("Signup completed"+(asVendor?" (vendor)":""));
   $("done").scrollIntoView({behavior:"smooth"});
