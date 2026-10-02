@@ -43,7 +43,28 @@
   <span class="prev">Preview — sample figures, no real money moves</span>
   <div class="top">
     <h2 style="margin:0 0 6px">Your offers</h2>
-    <div class="muted" style="color:#C7CBD1">Offer any supported pair. Buyers trade against them instantly.</div>
+    <div class="muted" style="color:#C7CBD1">You're already a Trex customer — no new account needed. Complete your public vendor profile once, then publish offers.</div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img id="vphoto" alt="Your photo" style="width:72px;height:72px;border-radius:50%;object-fit:cover;background:#EDE9DE;display:block">
+      <div style="flex:1"><b id="vname">Your vendor profile</b><div class="muted">Buyers see this — no anonymous vending on Trex.</div>
+      <div class="muted" id="vbadges"></div></div>
+    </div>
+    <label>Profile photo (shows on every offer)</label>
+    <input type="file" accept="image/*" id="photoIn">
+    <label>Public display name</label>
+    <input id="pname" placeholder="e.g. Adaobi FX">
+    <label>Country you trade from</label>
+    <select id="pcountry"></select>
+    <label>About your service (1–2 lines buyers will read)</label>
+    <input id="pbio" placeholder="e.g. Fast USD liquidity, online 8am–10pm WAT">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label>Reply pledge</label><select id="ppledge"><option>~5 minutes</option><option>~15 minutes</option><option>~30 minutes</option><option>~1 hour</option></select></div>
+      <div><label>Languages</label><input id="plangs" placeholder="e.g. English, Yoruba"></div>
+    </div>
+    <button class="btn btn-black" id="saveProfile">Save vendor profile</button>
   </div>
 
   <div class="card">
@@ -93,6 +114,32 @@ var seed=[
 function load(){ try{ var v=JSON.parse(localStorage.getItem(KEY)); if(Array.isArray(v)&&v.length) return v.map(function(o){return TREX.normalizeOffer(o);}); }catch(e){} return seed; }
 function store(v){ localStorage.setItem(KEY,JSON.stringify(v)); }
 var offers=load(), editing=null;
+function vprof(){ try{ return JSON.parse(localStorage.getItem("trex_vendor_profile"))||{}; }catch(e){ return {}; } }
+function paintProfile(){
+  var p=vprof();
+  if(p.photo) $("vphoto").src=p.photo;
+  if(p.name){ $("vname").textContent=p.name; if(!$("vendor").value||$("vendor").value.indexOf("You •")===0) $("vendor").value=p.name+" • ★new • 0 trades"; }
+  var v=TREX.load("trex_verify",{});
+  var b=[]; if(v.phone)b.push("✓ Phone"); if(v.email)b.push("✓ Email"); if(v.liveness)b.push("✓ Liveness");
+  $("vbadges").textContent=b.length?b.join(" • ")+" verified":"Verify in Settings to earn badges";
+  var s=$("pcountry"); if(!s.options.length){ TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; s.appendChild(o); }); }
+  var me=(TREX.profile()||{}).countryCode||"NG";
+  s.value=p.country||me;
+  if(p.bio)$("pbio").value=p.bio; if(p.pledge)$("ppledge").value=p.pledge; if(p.langs)$("plangs").value=p.langs; if(p.name)$("pname").value=p.name;
+}
+function readPhoto(file,cb){
+  var r=new FileReader();
+  r.onload=function(){ var img=new Image(); img.onload=function(){ var s=128/Math.max(img.width,img.height); var c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext("2d").drawImage(img,0,0,c.width,c.height); try{cb(c.toDataURL("image/jpeg",0.7));}catch(e){cb(null);} }; img.src=r.result; };
+  r.readAsDataURL(file);
+}
+$("photoIn").onchange=function(){ if(this.files[0]) readPhoto(this.files[0],function(url){ if(url){ var p=vprof(); p.photo=url; try{localStorage.setItem("trex_vendor_profile",JSON.stringify(p));}catch(e){ alert("Photo too large to keep — try a smaller one."); return; } paintProfile(); } }); };
+$("saveProfile").onclick=function(){
+  var p=vprof();
+  Object.assign(p,{name:$("pname").value||"You",country:$("pcountry").value,bio:$("pbio").value,pledge:$("ppledge").value,langs:$("plangs").value});
+  try{localStorage.setItem("trex_vendor_profile",JSON.stringify(p));}catch(e){ alert("Profile too large to save (photo). Use a smaller photo."); return; }
+  paintProfile(); alert("Vendor profile saved — it now appears on all your offers.");
+};
+paintProfile();
 function apiPost(path,body){ try{ if(window.API&&API.on){ API.post(path,body,API.key()).catch(function(){}); } }catch(e){} }
 (function boot(){ try{ if(window.API&&API.on){ API.get("/offers?all=1").then(function(r){ if(r&&r.ok&&r.offers&&r.offers.length){ offers=r.offers.map(function(o){return TREX.normalizeOffer(o);}); store(offers); render(); } }).catch(function(){}); } }catch(e){} })();
 function fillCur(sel,val){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code+" — "+c.name; sel.appendChild(o); }); sel.value=val; }
@@ -130,7 +177,8 @@ function render(){
     var d=document.createElement("div"); d.className="offer";
     d.innerHTML="<div class='row'><b>"+o.provide+" → "+o.want+"</b><span class='badge "+(o.live?"b-blue":"b-red")+"'>"+(o.live?"Live":"Paused")+"</span></div>"
       +"<div>Rate: "+TREX.fmtMoney(o.rate,o.want)+" per "+o.provide+"</div>"
-      +"<div class='muted'>Min "+o.min+" "+o.provide+" – Max "+o.max+" "+o.provide+" • "+(o.methods||[]).join(", ")+"</div>";
+      +"<div class='muted'>Min "+o.min+" "+o.provide+" – Max "+o.max+" "+o.provide+" • "+(o.methods||[]).join(", ")+"</div>"
+      +(o.photo||o.bio?("<div class='muted'>"+(o.photo?("<img src='"+o.photo+"' style='width:28px;height:28px;border-radius:50%;object-fit:cover;vertical-align:middle'> "):"")+(o.bio||"")+"</div>"):"");
     var e=document.createElement("button"); e.className="btn btn-line mini"; e.textContent="Edit";
     e.onclick=function(){ editing=o.id; $("formTitle").textContent="Edit offer"; $("provide").value=o.provide; $("want").value=o.want; $("rate").value=o.rate; $("min").value=o.min; $("max").value=o.max; $("vendor").value=o.vendor; $("terms").value=o.terms||""; $("cancelEdit").style.display="block"; refreshMethods(); refreshPreview(); window.scrollTo({top:0,behavior:"smooth"}); };
     var p2=document.createElement("button"); p2.className="btn btn-line mini"; p2.textContent=o.live?"Pause":"Resume";
@@ -154,9 +202,13 @@ $("save").onclick=function(){
   if(!methods.length) methods=["Bank transfer"];
   if(editing){ var o=offers.find(function(x){return x.id===editing;});
     Object.assign(o,{provide:p,want:w,rate:rate,rateText:TREX.fmtMoney(rate,w)+" per "+p,min:min,max:max,methods:methods,vendor:$("vendor").value,terms:$("terms").value,avail:$("avail").value});
+    var vp0=vprof();
+    o.photo=vp0.photo||o.photo||null; o.bio=vp0.bio||""; o.vcountry=vp0.country||o.country; o.pledge=vp0.pledge||"~15 minutes"; o.langs=vp0.langs||"";
     apiPost("/offers",{id:o.id,rate:rate,min:min,max:max,methods:methods,vendor:o.vendor,terms:o.terms});
     editing=null; $("formTitle").textContent="New offer"; $("cancelEdit").style.display="none";
   } else { var no={provide:p,want:w,rate:rate,min:min,max:max,methods:methods,vendor:$("vendor").value,country:prof().countryCode,terms:$("terms").value};
+    var vp=vprof();
+    no.photo=vp.photo||null; no.bio=vp.bio||""; no.vcountry=vp.country||prof().countryCode; no.pledge=vp.pledge||"~15 minutes"; no.langs=vp.langs||"";
     apiPost("/offers",no);
     offers.push(Object.assign({id:"OFR-"+Date.now().toString(36).toUpperCase(),rateText:TREX.fmtMoney(rate,w)+" per "+p,tier:"Probation",capacity:5000,avail:$("avail").value,live:true},no));
   }
