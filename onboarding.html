@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trex — Create account</title>
 <script src="js/trex.js"></script>
-<script src="js/dial-codes.js"></script>
 <script src="js/api.js"></script>
 <style>
   :root{--black:#0B0D12;--blue:#155EEF;--blue-dark:#0B2FB3;--blue-soft:#E4EBFF;
@@ -53,32 +52,11 @@
   </div>
 
   <div class="card">
-    <span class="step-dot on" id="d1">1</span><span class="step-dot" id="d2">2</span><span class="step-dot" id="d3">3</span><span class="step-dot" id="d4">4</span><span class="step-dot" id="d5">5</span>
-    <span class="muted">Phone → Country → Email → Security → Vendor</span>
+    <span class="step-dot on" id="d1">1</span><span class="step-dot" id="d2">2</span><span class="step-dot" id="d3">3</span><span class="step-dot" id="d4">4</span>
+    <span class="muted">Country → Email → Security → Vendor (optional)</span>
   </div>
 
-  <div class="card" id="s1">
-    <b>Verify your phone number</b>
-    <p class="muted">We will text you a 6-digit code.</p>
-    <label>Phone number</label>
-    <div style="display:grid;grid-template-columns:1.4fr 2fr;gap:8px">
-      <select id="dial" aria-label="Country dialling code"></select>
-      <input id="phone" placeholder="801 234 5678" inputmode="tel" />
-    </div>
-    <button class="btn btn-blue" id="sendPhoneOtp">Send code</button>
-    <div class="hidden" id="phoneSentWrap">
-      <p class="muted" id="phoneSentMsg"></p>
-      <label>Enter the 6-digit code</label>
-      <div class="otp" id="phoneOtp">
-        <input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/><input maxlength="1" inputmode="numeric"/>
-      </div>
-      <div class="resend"><span id="phoneTimer"></span> <a href="#" id="resendPhone">Resend code</a></div>
-    </div>
-    <button class="btn btn-black" id="verifyPhone">Verify phone</button>
-    <div class="muted" id="phoneErr"></div>
-  </div>
-
-  <div class="card hidden" id="sCountry">
+  <div class="card" id="sCountry">
     <b>Where are you based?</b>
     <p class="muted" id="detectMsg">Detecting your country…</p>
     <label>Country</label>
@@ -151,10 +129,8 @@
 <script>
 var $=function(id){return document.getElementById(id);};
 var rnd=function(){return String(Math.floor(100000+Math.random()*900000));};
-var phoneSent="", emailSent="", attempts=0, chosen=[], phoneServer=false, emailServer=false;
+var emailSent="", chosen=[], emailServer=false;
 function apiOn(){ try{ return window.API&&API.on; }catch(e){ return false; } }
-function fullPhone(){ return "+"+$("dial").value+$("phone").value.replace(/\D/g,""); }
-fillDialCodes($("dial"),"234");
 function otpVal(el){ return Array.prototype.map.call(el.querySelectorAll("input"),function(i){return i.value;}).join(""); }
 function fillOtp(el,code){ var inputs=el.querySelectorAll("input"); for(var i=0;i<inputs.length;i++)inputs[i].value=code[i]||""; }
 document.querySelectorAll(".otp").forEach(function(box){
@@ -163,61 +139,14 @@ document.querySelectorAll(".otp").forEach(function(box){
 });
 function timer(el,secs){ var s=secs; var t=setInterval(function(){ el.textContent=s>0?("Didn't get it? Resend in "+(s--)+"s."):""; if(s<0){clearInterval(t);} },1000); }
 function prof(){ return TREX.profile()||{}; }
-$("sendPhoneOtp").onclick=function(){
-  if(!$("phone").value.replace(/\D/g,"")){ $("phoneErr").textContent="Enter your phone number first."; return; }
-  function sendLocal(){ phoneServer=false; phoneSent=rnd(); showPhoneSent(false); }
-  if(apiOn()){
-    API.post("/otp",{phone:fullPhone()}).then(function(r){
-      if(r&&r.ok&&r.sms_sent){ phoneServer=true; showPhoneSent(true); }
-      else if(r&&r.ok){ phoneServer=true; phoneSent=r.demo_code; showPhoneSent(false); }
-      else sendLocal();
-    }).catch(sendLocal);
-    return;
-  }
-  sendLocal();
-};
-function showPhoneSent(real){
-  $("phoneSentWrap").classList.remove("hidden");
-  $("phoneSentMsg").textContent="Code sent to "+fullPhone()+".";
-  if(real){ $("phoneErr").textContent="Check your SMS, then enter the code here."; }
-  else { setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900); }
-  timer($("phoneTimer"),30);
-  if(!real) $("phoneErr").textContent="";
-}
-$("resendPhone").onclick=function(e){ e.preventDefault();
-  function rl(){ phoneServer=false; phoneSent=rnd(); setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900); timer($("phoneTimer"),30); }
-  if(apiOn()){ API.post("/otp",{phone:fullPhone()}).then(function(r){
-    if(r&&r.ok&&r.sms_sent){ phoneServer=true; $("phoneErr").textContent="New code sent — check your SMS."; timer($("phoneTimer"),30); }
-    else if(r&&r.ok){phoneServer=true;phoneSent=r.demo_code;setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);timer($("phoneTimer"),30);}
-    else rl();
-  }).catch(rl); }
-  else rl();
-};
-function phoneOK(){
-  $("s1").querySelector("b").textContent="Phone verified ✓";
-  openCountry();
-}
-$("verifyPhone").onclick=function(){
-  var code=otpVal($("phoneOtp"));
-  if(phoneServer&&apiOn()){
-    API.post("/verify",{phone:fullPhone(),code:code}).then(function(r){
-      if(r&&r.ok) phoneOK();
-      else { attempts++; $("phoneErr").textContent=(r&&r.error)||"That code doesn't match. Check and try again."; }
-    }).catch(function(){ $("phoneErr").textContent="Couldn't reach the server. Try again."; });
-    return;
-  }
-  if(code===phoneSent&&phoneSent){ phoneOK(); }
-  else { attempts++; $("phoneErr").textContent=attempts>=3?"Too many tries. Please request a new code.":"That code doesn't match. Check and try again."; }
-};
 function fillCountries(sel,val){ sel.innerHTML=""; TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; sel.appendChild(o); }); sel.value=val; }
 function fillCurs(sel,val){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code+" — "+c.name; sel.appendChild(o); }); sel.value=val; }
 function paintCurList(){
   $("curList").innerHTML=chosen.map(function(code){ var c=TREX.getCurrency(code); return "<span class='curpill'>"+c.flag+" "+code+"</span>"; }).join("");
 }
 function openCountry(){
-  $("d1").className="step-dot done"; $("d2").className="step-dot on";
-  $("sCountry").classList.remove("hidden");
-  var d=TREX.detectCountry({phone:fullPhone()});
+function openCountry(){
+  var d=TREX.detectCountry({});
   fillCountries($("country"));
   if(d.country){
     var g=TREX.getCountry(d.country);
@@ -229,14 +158,14 @@ function openCountry(){
     chosen=TREX.defaultSet("NG");
   }
   fillCurs($("addCur"),"USD"); paintCurList();
-  $("sCountry").scrollIntoView({behavior:"smooth"});
 }
+openCountry();
 $("addCur").onchange=function(){ var c=$("addCur").value; if(chosen.indexOf(c)<0){chosen.push(c); paintCurList();} };
 $("countryGo").onclick=function(){
   var cc=$("country").value, g=TREX.getCountry(cc);
   if(chosen.indexOf(g.currency)<0)chosen.unshift(g.currency);
-  TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,phone:fullPhone(),recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
-  $("d2").className="step-dot done"; $("d3").className="step-dot on";
+  TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
+  $("d1").className="step-dot done"; $("d2").className="step-dot on";
   $("s2").classList.remove("hidden"); $("sCountry").querySelector("b").textContent="Country saved ✓";
   $("s2").scrollIntoView({behavior:"smooth"});
 };
@@ -253,7 +182,7 @@ $("sendEmailOtp").onclick=function(){
   }
   el();
 };
-function emailOK(){ $("d3").className="step-dot done"; $("d4").className="step-dot on"; $("s3").classList.remove("hidden"); $("s3").scrollIntoView({behavior:"smooth"}); }
+function emailOK(){ $("d2").className="step-dot done"; $("d3").className="step-dot on"; $("s3").classList.remove("hidden"); $("s3").scrollIntoView({behavior:"smooth"}); }
 $("verifyEmail").onclick=function(){
   var code=otpVal($("emailOtp"));
   if(emailServer&&apiOn()){
@@ -268,10 +197,10 @@ $("verifyEmail").onclick=function(){
 };
 $("finishPersonal").onclick=function(){
   if(!$("fullName").value||$("pin").value.length!==4){ alert("Add your name and a 4-digit PIN."); return; }
-  try{ var v=TREX.load("trex_verify",{}); v.phone=true;v.email=true;v.liveness=!!$("selfie").value;v.pin=true; TREX.store("trex_verify",v); }catch(e){}
+  try{ var v=TREX.load("trex_verify",{}); v.email=true;v.liveness=!!$("selfie").value;v.pin=true; TREX.store("trex_verify",v); }catch(e){}
   $("tierBox").classList.remove("hidden"); $("s4").classList.remove("hidden");
   var p=prof(); fillCurs($("limitCur"),p.localCurrency||"NGN");
-  $("d4").className="step-dot done"; $("d5").className="step-dot on"; $("s4").scrollIntoView({behavior:"smooth"});
+  $("d3").className="step-dot done"; $("d4").className="step-dot on"; $("s4").scrollIntoView({behavior:"smooth"});
 };
 function bondText(){
   var lim=Number($("limit").value)||0, cur=$("limitCur").value||"NGN";
