@@ -31,8 +31,9 @@ append-only ledger (`reserve → release/refund/forfeit`) and audit trail.
 
 ## Live integrations
 
-- **Resend (email OTP): wired and running.** `POST /api/otp {email}`
-  sends a real code via Resend when the server starts with a key:
+- **Resend (email OTP): LIVE since 2 Oct 2026** — verified end to end
+  (real inbox code accepted by `/api/verify`). `POST /api/otp {email}`
+  sends a real code when the server starts with a key:
   `RESEND_API_KEY=re_xxx RESEND_FROM="Trex <hello@yourdomain>" ruby api.rb 8080`.
   Without a key it returns a preview `demo_code`; with a key the code
   lives ONLY in the inbox — never in the response. Status:
