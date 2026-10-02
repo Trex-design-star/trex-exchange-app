@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trex — Create account</title>
 <script src="js/trex.js"></script>
+<script src="js/dial-codes.js"></script>
 <script src="js/api.js"></script>
 <style>
   :root{--black:#0B0D12;--blue:#155EEF;--blue-dark:#0B2FB3;--blue-soft:#E4EBFF;
@@ -60,7 +61,10 @@
     <b>Verify your phone number</b>
     <p class="muted">We will text you a 6-digit code.</p>
     <label>Phone number</label>
-    <input id="phone" placeholder="+234 801 234 5678" inputmode="tel" />
+    <div style="display:grid;grid-template-columns:1.4fr 2fr;gap:8px">
+      <select id="dial" aria-label="Country dialling code"></select>
+      <input id="phone" placeholder="801 234 5678" inputmode="tel" />
+    </div>
     <button class="btn btn-blue" id="sendPhoneOtp">Send code</button>
     <div class="hidden" id="phoneSentWrap">
       <p class="muted" id="phoneSentMsg"></p>
@@ -149,6 +153,8 @@ var $=function(id){return document.getElementById(id);};
 var rnd=function(){return String(Math.floor(100000+Math.random()*900000));};
 var phoneSent="", emailSent="", attempts=0, chosen=[], phoneServer=false, emailServer=false;
 function apiOn(){ try{ return window.API&&API.on; }catch(e){ return false; } }
+function fullPhone(){ return "+"+$("dial").value+$("phone").value.replace(/\D/g,""); }
+fillDialCodes($("dial"),"234");
 function otpVal(el){ return Array.prototype.map.call(el.querySelectorAll("input"),function(i){return i.value;}).join(""); }
 function fillOtp(el,code){ var inputs=el.querySelectorAll("input"); for(var i=0;i<inputs.length;i++)inputs[i].value=code[i]||""; }
 document.querySelectorAll(".otp").forEach(function(box){
@@ -158,26 +164,33 @@ document.querySelectorAll(".otp").forEach(function(box){
 function timer(el,secs){ var s=secs; var t=setInterval(function(){ el.textContent=s>0?("Didn't get it? Resend in "+(s--)+"s."):""; if(s<0){clearInterval(t);} },1000); }
 function prof(){ return TREX.profile()||{}; }
 $("sendPhoneOtp").onclick=function(){
-  if(!$("phone").value){ $("phoneErr").textContent="Enter your phone number first."; return; }
-  function sendLocal(){ phoneServer=false; phoneSent=rnd(); showPhoneSent(); }
+  if(!$("phone").value.replace(/\D/g,"")){ $("phoneErr").textContent="Enter your phone number first."; return; }
+  function sendLocal(){ phoneServer=false; phoneSent=rnd(); showPhoneSent(false); }
   if(apiOn()){
-    API.post("/otp",{phone:$("phone").value}).then(function(r){
-      if(r&&r.ok){ phoneServer=true; phoneSent=r.demo_code; showPhoneSent(); }
+    API.post("/otp",{phone:fullPhone()}).then(function(r){
+      if(r&&r.ok&&r.sms_sent){ phoneServer=true; showPhoneSent(true); }
+      else if(r&&r.ok){ phoneServer=true; phoneSent=r.demo_code; showPhoneSent(false); }
       else sendLocal();
     }).catch(sendLocal);
     return;
   }
   sendLocal();
 };
-function showPhoneSent(){
+function showPhoneSent(real){
   $("phoneSentWrap").classList.remove("hidden");
-  $("phoneSentMsg").textContent="Code sent to "+$("phone").value+".";
-  setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);
-  timer($("phoneTimer"),30); $("phoneErr").textContent="";
+  $("phoneSentMsg").textContent="Code sent to "+fullPhone()+".";
+  if(real){ $("phoneErr").textContent="Check your SMS, then enter the code here."; }
+  else { setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900); }
+  timer($("phoneTimer"),30);
+  if(!real) $("phoneErr").textContent="";
 }
 $("resendPhone").onclick=function(e){ e.preventDefault();
   function rl(){ phoneServer=false; phoneSent=rnd(); setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900); timer($("phoneTimer"),30); }
-  if(apiOn()){ API.post("/otp",{phone:$("phone").value}).then(function(r){ if(r&&r.ok){phoneServer=true;phoneSent=r.demo_code;setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);timer($("phoneTimer"),30);} else rl(); }).catch(rl); }
+  if(apiOn()){ API.post("/otp",{phone:fullPhone()}).then(function(r){
+    if(r&&r.ok&&r.sms_sent){ phoneServer=true; $("phoneErr").textContent="New code sent — check your SMS."; timer($("phoneTimer"),30); }
+    else if(r&&r.ok){phoneServer=true;phoneSent=r.demo_code;setTimeout(function(){fillOtp($("phoneOtp"),phoneSent);},900);timer($("phoneTimer"),30);}
+    else rl();
+  }).catch(rl); }
   else rl();
 };
 function phoneOK(){
@@ -187,7 +200,7 @@ function phoneOK(){
 $("verifyPhone").onclick=function(){
   var code=otpVal($("phoneOtp"));
   if(phoneServer&&apiOn()){
-    API.post("/verify",{phone:$("phone").value,code:code}).then(function(r){
+    API.post("/verify",{phone:fullPhone(),code:code}).then(function(r){
       if(r&&r.ok) phoneOK();
       else { attempts++; $("phoneErr").textContent=(r&&r.error)||"That code doesn't match. Check and try again."; }
     }).catch(function(){ $("phoneErr").textContent="Couldn't reach the server. Try again."; });
@@ -204,7 +217,7 @@ function paintCurList(){
 function openCountry(){
   $("d1").className="step-dot done"; $("d2").className="step-dot on";
   $("sCountry").classList.remove("hidden");
-  var d=TREX.detectCountry({phone:$("phone").value});
+  var d=TREX.detectCountry({phone:fullPhone()});
   fillCountries($("country"));
   if(d.country){
     var g=TREX.getCountry(d.country);
@@ -222,7 +235,7 @@ $("addCur").onchange=function(){ var c=$("addCur").value; if(chosen.indexOf(c)<0
 $("countryGo").onclick=function(){
   var cc=$("country").value, g=TREX.getCountry(cc);
   if(chosen.indexOf(g.currency)<0)chosen.unshift(g.currency);
-  TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,phone:$("phone").value,recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
+  TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,phone:fullPhone(),recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
   $("d2").className="step-dot done"; $("d3").className="step-dot on";
   $("s2").classList.remove("hidden"); $("sCountry").querySelector("b").textContent="Country saved ✓";
   $("s2").scrollIntoView({behavior:"smooth"});
