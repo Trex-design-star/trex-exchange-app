@@ -16,7 +16,7 @@ Do not start 4 until 2 capacity reservation works. Do not launch until ≥97% di
 **Goal:** decisions, ledger design, pipeline.
 **PRD:** §10, §13, §15.
 
-Outputs (founder-chosen stack, 28 Sep 2026):
+Outputs (founder-chosen stack, 28 Sep 2026; bond updated 2 Oct 2026: per-trade 50% ONLY — no standing model, no switching):
 - Repo monorepo: `app` (Next.js — founder choice for initial web app), `api` (Node.js NestJS modular: onboarding/liveness, bond ledger, offers, trade, chat, disputes, notifications, admin), `admin-web` (Next.js), `infra`.
 - Envs dev/staging/prod with separate Paystack credentials (founder choice), secrets vault, CI/CD, migrations, backups, logging, error tracking, feature flags.
 - Data baseline: PostgreSQL (ledger + trades — founder choice), Redis (presence + rate-limit), Cloudflare R2 (proofs/attachments — founder choice).
