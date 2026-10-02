@@ -396,16 +396,8 @@ server.mount_proc('/api') do |req, res|
           ledger << { 'id' => 'evt_' + SecureRandom.hex(6), 'kind' => 'release', 'trade' => nil, 'amount' => amt, 'ccy' => ccy, 'at' => Time.now.utc.iso8601 }
           write_json('ledger.json', ledger)
         when 'switch'
-          busy = (bond['reserved'] || {}).values.map(&:to_f).sum.positive?
-          next({ 'ok' => false, 'error' => 'Finish open trades first.' }) if busy
-          last = read_json('keys.json', {})['__switch_at__']
-          if last && Time.now.to_i - last.to_i < 72 * 3600
-            next({ 'ok' => false, 'error' => 'You can switch plans again after 72 hours.' })
-          end
-          keys = read_json('keys.json', {})
-          keys['__switch_at__'] = Time.now.to_i
-          write_json('keys.json', keys)
-          bond['model'] = bond['model'] == 'standing' ? 'pertrade' : 'standing'
+          # Removed 2 Oct 2026 (decision 17): per-trade 50% is the only model.
+          next({ 'ok' => false, 'error' => 'Trex uses one bond model: 50% per trade. Nothing to switch.' })
         else
           next({ 'ok' => false, 'error' => 'Unknown bond operation.' })
         end
