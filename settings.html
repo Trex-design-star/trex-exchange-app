@@ -90,7 +90,7 @@ function paint(){
   });
   fillCur($("addSel"),"USD");
   var v=TREX.load("trex_verify",{phone:true,email:true,liveness:true,pin:true});
-  $("secList").innerHTML=["phone","email","liveness","pin"].map(function(k){return "<div class='crow'><span>"+k.charAt(0).toUpperCase()+k.slice(1)+" verified</span><span class='badge b-ok'>"+(v[k]?"On":"Off")+"</span></div>";}).join("")
+  $("secList").innerHTML=["email","liveness","pin"].map(function(k){return "<div class='crow'><span>"+k.charAt(0).toUpperCase()+k.slice(1)+" verified</span><span class='badge b-ok'>"+(v[k]?"On":"Off")+"</span></div>";}).join("")
     +"<div class='crow'><span>Trusted devices</span><span class='muted'>This device</span></div><div class='crow'><span>Last sign-in</span><span class='muted'>"+TREX.localTime()+"</span></div>";
   paintSup();
 }
