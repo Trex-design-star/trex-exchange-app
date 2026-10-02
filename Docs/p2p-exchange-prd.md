@@ -435,6 +435,7 @@ Priority key: **P0** = MVP, **P1** = Phase 2, **P2** = later.
 | 18 | 2 Oct 2026 | Founder directive: vendors are customers first — no second signup; vendor CTA goes to offers; vendor profiles carry photo, bio, country, reply pledge, languages and verification badges so no vendor is anonymous |
 | 19 | 2 Oct 2026 | Resend email delivery LIVE — real inbox code verified end to end via /api/verify; trade receipts and review notices deliver for real |
 | 20 | 2 Oct 2026 | Global SMS via Better Auth phone OTP + Twilio sender (all dialling codes in signup); wired with honest preview fallback until Twilio keys land |
+| 21 | 2 Oct 2026 | Phone verification CANCELLED — email-only verification; signup is now Country → Email → Security → Vendor; SMS/Twilio shelved |
 
 ## 15. Parking lot
 
