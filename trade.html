@@ -188,7 +188,7 @@ function find(){
       +(i===0&&sort==="rec"?"<span class='badge b-green'>Recommended: top-rated vendor</span>":"")
       +"<span class='badge "+(o.tier==="Gold"?"b-blue":"b-brown")+"'>"+(o.tier==="Gold"?"Top vendor":"New vendor")+"</span></div>"
       +"<div>Rate: "+(o.rateText||(TREX.fmtMoney(o.rate,o.want||recv)+" per "+provides))+"</div>"
-      +"<div class='muted'>"+o.vendor+" • Min "+o.min+" "+provides+" – Max "+o.max+" "+provides+"</div>"
+      +"<div class='muted'>"+(o.photo?("<img src='"+o.photo+"' style='width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle'> "):"")+o.vendor+" • Min "+o.min+" "+provides+" – Max "+o.max+" "+provides+(o.pledge?(" • Replies "+o.pledge):"")+"</div>"
       +"<div class='muted'>Capacity: "+TREX.fmtMoney(o.capacity||0,provides)+" available • "+(o.methods||["Bank transfer"]).join(", ")+"</div>";
     var vb=document.createElement("button"); vb.className="btn small line"; vb.textContent="Vendor profile";
     vb.onclick=function(){ showVendor(o); };
@@ -199,10 +199,14 @@ function find(){
 }
 function showVendor(o){
   var v=TREX.parseVendor(o.vendor), provides=o.provide||"?";
-  var g=o.country?TREX.getCountry(o.country):null;
+  var g=TREX.getCountry(o.vcountry||o.country);
   $("vTitle").textContent=v.name+(g?" "+g.flag+" "+g.name:"");
-  $("vBody").innerHTML="Completed trades: "+(v.trades||"just starting")+"<br>Rating: "+(v.rating||"new")+" • Completion and response history build with every trade<br>"
-    +"Capacity: "+TREX.fmtMoney(o.capacity||0,provides)+" available<br>Terms: "+(o.terms||"Standard Trex protection terms.");
+  $("vBody").innerHTML=(o.photo?("<img src='"+o.photo+"' style='width:64px;height:64px;border-radius:50%;object-fit:cover'><br>"):"")
+    +(o.bio?("<b>"+o.bio+"</b><br>"):"")
+    +"Completed trades: "+(v.trades||"just starting")+"<br>Rating: "+(v.rating||"new")+" • History builds with every trade<br>"
+    +"Replies "+(o.pledge||"within minutes")+(o.langs?(" • Speaks "+o.langs):"")+"<br>"
+    +"Capacity: "+TREX.fmtMoney(o.capacity||0,provides)+" available • Min "+o.min+" "+provides+" – Max "+o.max+" "+provides+"<br>"
+    +"Accepts: "+(o.methods||["Bank transfer"]).join(", ")+"<br>Terms: "+(o.terms||"Standard Trex protection terms.");
   $("vendorModal").style.display="flex";
 }
 $("vClose").onclick=function(){$("vendorModal").style.display="none";};
