@@ -69,7 +69,26 @@ rescue StandardError
   {}
 end
 
-# Resend email delivery. Returns {sent:true} only on HTTP 2xx.
+# Twilio SMS delivery (global sender behind Better Auth phone OTP).
+# Returns {sent:true} only on HTTP 2xx; otherwise honest fallback.
+def twilio_send(to, text)
+  sid = ENV['TWILIO_SID'].to_s
+  token = ENV['TWILIO_TOKEN'].to_s
+  from = ENV['TWILIO_FROM'].to_s
+  return { sent: false, reason: 'no-key' } if sid.empty? || token.empty? || from.empty?
+  uri = URI("https://api.twilio.com/2010-04-01/Accounts/#{sid}/Messages.json")
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.open_timeout = 10
+  http.read_timeout = 15
+  req = Net::HTTP::Post.new(uri.path)
+  req.basic_auth(sid, token)
+  req.set_form_data({ 'To' => to, 'From' => from, 'Body' => text })
+  resp = http.request(req)
+  { sent: resp.is_a?(Net::HTTPSuccess), status: resp.code.to_i, body: resp.body.to_s[0, 160] }
+rescue StandardError => e
+  { sent: false, reason: 'error', error: e.message.to_s[0, 120] }
+end
 # No key (or no network) => {sent:false} and callers fall back honestly.
 def resend_send(to, subject, text)
   key = ENV['RESEND_API_KEY'].to_s
@@ -139,7 +158,8 @@ server.mount_proc('/api') do |req, res|
     when ['GET', 'integrations']
       send_json(res, { 'ok' => true,
         'resend' => !ENV['RESEND_API_KEY'].to_s.empty?,
-        'sms' => false, 'paystack' => !ENV['PAYSTACK_SECRET_KEY'].to_s.empty? })
+        'sms' => !(ENV['TWILIO_SID'].to_s.empty? || ENV['TWILIO_TOKEN'].to_s.empty? || ENV['TWILIO_FROM'].to_s.empty?),
+        'paystack' => !ENV['PAYSTACK_SECRET_KEY'].to_s.empty? })
 
     when ['POST', 'otp']
       b = json_body(req)
@@ -164,9 +184,16 @@ server.mount_proc('/api') do |req, res|
             send_json(res, { 'ok' => false, 'error' => 'Email failed to send — check the address and try again.' }, 502)
           end
         else
-          # Preview path: no SMS provider connected yet — code returns to the
-          # demo device so signup can complete (never used for real delivery).
-          send_json(res, { 'ok' => true, 'demo_code' => code, 'expires_in' => 600, 'preview' => true })
+          # Phone path: real SMS when a global sender is configured, honest
+          # preview code otherwise. Better Auth verifies either way.
+          r = twilio_send(target, "Your Trex code is #{code}. It expires in 10 minutes.")
+          if r[:sent]
+            send_json(res, { 'ok' => true, 'sms_sent' => true, 'expires_in' => 600 })
+          elsif r[:reason] == 'no-key'
+            send_json(res, { 'ok' => true, 'demo_code' => code, 'expires_in' => 600, 'preview' => true })
+          else
+            send_json(res, { 'ok' => false, 'error' => 'SMS failed to send — check the number and try again.' }, 502)
+          end
         end
       end
 
