@@ -21,7 +21,6 @@
   .muted{color:var(--muted);font-size:13px}
   .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-block}
   .b-ok{background:var(--green-soft);color:var(--green)}
-  .b-brown{background:var(--brown-soft);color:var(--brown)}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .cap{border:1px solid var(--line);border-radius:12px;padding:12px}
   .bar{height:10px;background:#EDE9DE;border-radius:999px;overflow:hidden;margin:8px 0}
@@ -31,10 +30,11 @@
   .btn{width:100%;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
   .btn-blue{background:var(--blue);color:#fff}
   .btn-black{background:var(--black);color:#fff}
-  .btn-line{background:#fff;border:2px solid var(--black);color:var(--black)}
   .log{background:#0B0D12;color:#D1D5DB;border-radius:10px;padding:12px;font-size:12px;white-space:pre-line;min-height:80px}
+  .rule50{background:#0B0D12;color:#fff;border-radius:12px;padding:14px;border:2px solid #F2B705;margin-bottom:4px}
+  .rule50 b{color:#F2B705}
   .bottomnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex}
-  .bottomnav a{flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none}
+  .bottomnav a{flex:1;text-align:center;padding:12px 2px;font-size:11px;font-weight:700;color:var(--muted);text-decoration:none}
   .bottomnav a.on{color:var(--blue)}
 </style>
 </head>
@@ -44,36 +44,40 @@
   <span class="prev">Preview — sample figures, no real money moves</span>
   <div class="top">
     <h2 style="margin:0 0 6px">Your protection</h2>
-    <div class="muted" style="color:#C7CBD1">A refundable deposit in each currency you sell. It guarantees your buyers get what they paid for.</div>
+    <div class="muted" style="color:#C7CBD1">One simple bond: 50% of every order, held only while that trade is open.</div>
+  </div>
+
+  <div class="rule50">
+    <span class="badge" style="background:#F2B705;color:#0B0D12">50% PER-TRADE BOND</span>
+    <p style="font-size:15px">Customer orders <b>$200</b> → <b>$100</b> of your money locks for that trade.<br>
+    You deliver → it comes <b>straight back</b>.<br>
+    You don't → it <b>pays the customer</b>.</p>
   </div>
 
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center"><b id="modelName">Standing plan — 25%</b><span class="badge b-brown" id="modelBadge">STANDING</span></div>
-    <p class="muted">Two plans: <b>Standing</b> (25% of your limits, always ready) or <b>Per-trade</b> (50% held only while a trade is open). Switching needs no open trades and a 72-hour gap.</p>
-    <button class="btn btn-line" id="switchModel">Switch plan</button>
-  </div>
-
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center"><b>Protection capacity</b><span class="badge b-ok">All covered ✓</span></div>
-    <div class="grid" id="capGrid" style="margin-top:8px"></div>
-    <div class="muted" id="convNote"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>Bond balances</b><span class="badge b-ok">Fully refundable ✓</span></div>
+    <p class="muted">Keep enough in each currency you sell — every open order needs its 50% covered.</p>
+    <div class="grid" id="capGrid"></div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Open trades (demo)</label><input id="openTrades" type="number" value="0" min="0" max="10"></div>
+      <div><label>&nbsp;</label><div class="muted" id="lockLine" style="padding-top:12px"></div></div>
+    </div>
   </div>
 
   <div class="card">
     <b>Top up</b>
-    <p class="muted">Send money to your dedicated Trex account. We confirm it and credit the right currency — fees always shown separately.</p>
+    <p class="muted">Send money to your dedicated Trex account. We confirm it and credit the right currency.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div><label>Currency</label><select id="topCur"></select></div>
       <div><label>Amount</label><input id="topAmt" type="number" value="1000"></div>
     </div>
-    <div class="muted" id="topInfo"></div>
     <button class="btn btn-black" id="topBtn">I've sent the transfer</button>
     <div class="log" id="inLog">Waiting for your transfer…</div>
   </div>
 
   <div class="card">
     <b>Withdraw</b>
-    <p class="muted">Available anytime you have no open trades in that currency. Large withdrawals need a second approval.</p>
+    <p class="muted">Free balances withdraw anytime. Large withdrawals need a second approval.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div><label>Currency</label><select id="relCur"></select></div>
       <div><label>Amount</label><input id="relAmt" type="number" value="500"></div>
@@ -82,54 +86,42 @@
     <div class="log" id="outLog">No withdrawals yet.</div>
   </div>
 </div>
-<nav class="bottomnav"><a href="dashboard.html">Home</a><a href="trade.html">Trade</a><a href="offers.html" class="on">Sell</a><a href="settings.html">Profile</a><a href="more.html">More</a></nav>
+<nav class="bottomnav"><a href="dashboard.html">Home</a><a href="trade.html">Trade</a><a href="vendor.html">Become a vendor</a><a href="settings.html">Profile</a><a href="more.html">More</a></nav>
 <script>
 var $=function(id){return document.getElementById(id);};
-var bond=TREX.load("trex_bond",{model:"standing",base:"USD",caps:{USD:10000,NGN:8000000,GBP:4000,EUR:6000},used:{}});
+var bond=TREX.load("trex_bond",{caps:{USD:10000,NGN:8000000,GBP:4000,EUR:6000},locked:{}});
 function save(){ TREX.store("trex_bond",bond); }
 function fillCur(sel){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code; sel.appendChild(o); }); }
 function paint(){
-  $("modelName").textContent=bond.model==="standing"?"Standing plan — 25%":"Per-trade plan — 50%";
-  $("modelBadge").textContent=bond.model.toUpperCase();
   var g=$("capGrid"); g.innerHTML="";
+  var openN=Number($("openTrades").value)||0;
   Object.keys(bond.caps).forEach(function(code){
-    var cap=bond.caps[code], used=bond.used[code]||0, c=TREX.getCurrency(code);
+    var bal=bond.caps[code], c=TREX.getCurrency(code);
     var d=document.createElement("div"); d.className="cap";
-    d.innerHTML="<div style='font-size:20px'>"+(c?c.flag:"")+"</div><b>"+code+"</b><div style='font-size:18px;font-weight:800'>"+TREX.fmt(cap-used,code)+"</div><div class='muted'>available of "+TREX.fmt(cap,code)+"</div><div class='bar'><i style='width:"+Math.round(used/Math.max(cap,1)*100)+"%'></i></div>";
+    d.innerHTML="<div style='font-size:20px'>"+(c?c.flag:"")+"</div><b>"+code+"</b><div style='font-size:18px;font-weight:800'>"+TREX.fmt(bal,code)+"</div><div class='muted'>available bond</div>";
     g.appendChild(d);
   });
-  var base=bond.base;
-  $("convNote").textContent="Capacities convert from your "+base+" base at the current reference rate — every conversion shows its basis. Never mixed silently.";
-  $("topInfo").textContent="Account: ••4210 in your name • Expected: "+$("topAmt").value+" "+$("topCur").value+" protection + fee shown separately";
+  $("lockLine").textContent=openN?("~"+openN+" open trade(s): 50% of each order value is locked right now."):"No open trades — nothing locked.";
 }
 ["topCur","relCur"].forEach(function(id){ fillCur($(id)); });
 $("topCur").value="USD"; $("relCur").value="USD";
-$("topCur").onchange=$("topAmt").oninput=function(){ $("topInfo").textContent="Account: ••4210 in your name • Expected: "+$("topAmt").value+" "+$("topCur").value+" protection + fee shown separately"; };
-paint();
+$("openTrades").oninput=paint; paint();
 $("topBtn").onclick=function(){
   var c=$("topCur").value, a=Number($("topAmt").value)||0;
+  if(!(a>0)){ alert("Enter an amount above zero."); return; }
   bond.caps[c]=(bond.caps[c]||0)+a; save(); paint();
-  $("inLog").textContent="Transfer received ✓\n+"+TREX.fmtMoney(a,c)+" credited to your "+c+" protection.";
+  $("inLog").textContent="Transfer received ✓\n+"+TREX.fmtMoney(a,c)+" added to your "+c+" bond.";
   TREX.audit("Bond topped up "+a+" "+c);
 };
 $("relBtn").onclick=function(){
   var c=$("relCur").value, a=Number($("relAmt").value)||0;
-  var free=(bond.caps[c]||0)-(bond.used[c]||0);
-  if(a>free){ $("outLog").textContent="That exceeds your free "+c+" balance ("+TREX.fmtMoney(free,c)+")."; return; }
+  var openN=Number($("openTrades").value)||0;
+  if(openN>0){ $("outLog").textContent="Finish your open trades first — their 50% bonds are still locked."; return; }
+  if(!(a>0)||a>(bond.caps[c]||0)){ $("outLog").textContent="That exceeds your free "+c+" balance."; return; }
   bond.caps[c]-=a; save(); paint();
   var ref="REF-"+Date.now().toString(36).toUpperCase();
   $("outLog").textContent="Withdrawal "+ref+": "+TREX.fmtMoney(a,c)+" sent to your bank. ✓"+(a>5000?"\nLarge amount — second approval recorded.":"");
   TREX.audit("Bond withdrawal "+a+" "+c+" "+ref);
-};
-$("switchModel").onclick=function(){
-  var busy=Object.keys(bond.used).some(function(k){return (bond.used[k]||0)>0;});
-  if(busy){ alert("Finish your open trades first — switching only affects future trades."); return; }
-  var last=TREX.load("trex_switch",0);
-  if(Date.now()-last<72*3600*1000){ alert("You can switch plans again after 72 hours."); return; }
-  TREX.store("trex_switch",Date.now());
-  bond.model=bond.model==="standing"?"pertrade":"standing"; save(); paint();
-  toast2("Switched. Your history and level carry over.");
-  function toast2(m){ $("outLog").textContent=m; }
 };
 </script>
 </body>
