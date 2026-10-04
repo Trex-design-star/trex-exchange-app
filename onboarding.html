@@ -82,6 +82,7 @@
     </div>
     <button class="btn btn-black" id="verifyEmail">Verify email</button>
     <div class="muted" id="emailErr"></div>
+    <button class="btn btn-line" data-back="sCountry">← Back</button>
   </div>
 
   <div class="card hidden" id="s3">
@@ -96,7 +97,7 @@
     <input id="pin" maxlength="4" inputmode="numeric" placeholder="••••" />
     <label><input type="checkbox" id="bio" style="width:auto"> Unlock with fingerprint or face on this device</label>
     <button class="btn btn-blue" id="finishPersonal">Continue</button>
-    <div class="tier hidden" id="tierBox">Welcome aboard: <b>Starter tier</b><br><span class="muted" style="color:#C7CBD1">Limits grow automatically as you complete trades.</span></div>
+    <button class="btn btn-line" data-back="s2">← Back</button>
   </div>
 
   <div class="card hidden" id="s4">
@@ -115,6 +116,7 @@
     </div>
     <button class="btn btn-blue" id="finishVendor">Finish — open my dashboard</button>
     <button class="btn btn-line" id="skipVendor">Skip — I only want to trade</button>
+    <button class="btn btn-line" data-back="s3">← Back</button>
   </div>
 
   <div class="card hidden" id="done">
@@ -144,6 +146,9 @@ function openCountry(){
   chosen=TREX.defaultSet("NG");
   fillCurs($("addCur"),"USD"); paintCurList();
 }
+var STEPS=["sCountry","s2","s3","s4","done"];
+function show(id){ STEPS.forEach(function(s){ $(s).classList.toggle("hidden", s!==id); }); window.scrollTo(0,0); }
+document.querySelectorAll("[data-back]").forEach(function(b){ b.onclick=function(){ show(b.dataset.back); }; });
 function fillCountries(sel,val){ sel.innerHTML=""; var ph=document.createElement("option"); ph.value=""; ph.textContent="Select your country…"; sel.appendChild(ph); TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; sel.appendChild(o); }); sel.value=val||""; }
 function fillCurs(sel,val){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code+" — "+c.name; sel.appendChild(o); }); sel.value=val; }
 function paintCurList(){
@@ -165,8 +170,8 @@ $("countryGo").onclick=function(){
   if(chosen.indexOf(g.currency)<0)chosen.unshift(g.currency);
   TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
   $("d1").className="step-dot done"; $("d2").className="step-dot on";
-  $("s2").classList.remove("hidden"); $("sCountry").querySelector("b").textContent="Country saved ✓";
-  $("s2").scrollIntoView({behavior:"smooth"});
+  $("sCountry").querySelector("b").textContent="Country saved ✓";
+  show("s2");
 };
 $("sendEmailOtp").onclick=function(){
   if($("email").value.indexOf("@")<0){ $("emailErr").textContent="Enter a valid email address."; return; }
@@ -181,7 +186,7 @@ $("sendEmailOtp").onclick=function(){
   }
   el();
 };
-function emailOK(){ $("d2").className="step-dot done"; $("d3").className="step-dot on"; $("s3").classList.remove("hidden"); $("s3").scrollIntoView({behavior:"smooth"}); }
+function emailOK(){ $("d2").className="step-dot done"; $("d3").className="step-dot on"; show("s3"); }
 $("verifyEmail").onclick=function(){
   var code=otpVal($("emailOtp"));
   if(emailServer&&apiOn()){
@@ -197,9 +202,9 @@ $("verifyEmail").onclick=function(){
 $("finishPersonal").onclick=function(){
   if(!$("fullName").value||$("pin").value.length!==4){ alert("Add your name and a 4-digit PIN."); return; }
   try{ var v=TREX.load("trex_verify",{}); v.email=true;v.liveness=!!$("selfie").value;v.pin=true; TREX.store("trex_verify",v); }catch(e){}
-  $("tierBox").classList.remove("hidden"); $("s4").classList.remove("hidden");
-  var p=prof(); fillCurs($("limitCur"),p.localCurrency||"NGN");
-  $("d3").className="step-dot done"; $("d4").className="step-dot on"; $("s4").scrollIntoView({behavior:"smooth"});
+  $("d3").className="step-dot done"; $("d4").className="step-dot on";
+  var p0=prof(); fillCurs($("limitCur"),p0.localCurrency||"NGN"); bondText();
+  show("s4");
 };
 function bondText(){
   var lim=Number($("limit").value)||0, cur=$("limitCur").value||"NGN";
@@ -208,12 +213,11 @@ function bondText(){
 $("limit").oninput=bondText;
 function finish(asVendor){
   if(asVendor&&!$("accept").checked){ alert("Please accept the trading rules first."); return; }
-  $("done").classList.remove("hidden");
   var p=prof();
-  $("summary").textContent=$("fullName").value+" • "+(p.localCurrency||"")+" + USD, GBP, EUR ready"+(asVendor?" • per-trade vendor":"");
+  $("summary").textContent=$("fullName").value+" • Starter tier • "+(p.localCurrency||"")+" + USD, GBP, EUR ready"+(asVendor?" • per-trade vendor":"");
   try{ var v=TREX.load("trex_verify",{}); v.vendor=asVendor; TREX.store("trex_verify",v);}catch(e){}
   TREX.audit("Signup completed"+(asVendor?" (vendor)":""));
-  $("done").scrollIntoView({behavior:"smooth"});
+  show("done");
 }
 $("finishVendor").onclick=function(){finish(true);};
 $("skipVendor").onclick=function(){finish(false);};
