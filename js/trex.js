@@ -122,31 +122,34 @@
       asOf:now, expiresAt:now+30000, illustrative:true };
   }
 
-  /* ---------- Country detection (phone prefix + locale + timezone) ---------- */
+  /* ---------- Country detection (weighted signals) ---------- */
   function detectCountry(o){
     o=o||{};
-    var reasons=[], cands={};
-    function vote(code, why){ cands[code]=(cands[code]||0)+1; reasons.push(why); }
+    var reasons=[], scores={};
+    // Weighted votes: phone prefix is proof of a real number (3),
+    // device timezone is where you actually are (2), browser language
+    // region is only a weak hint — "en-US" usually just means English (0.5).
+    function vote(code, w, why){ scores[code]=(scores[code]||0)+w; reasons.push(why); }
     var digits=String(o.phone||"").replace(/\D/g,"");
     if(digits){
       var best=null;
       COUNTRIES.forEach(function(c){ if(digits.indexOf(c.prefix)===0 && (!best||c.prefix.length>best.prefix.length)) best=c; });
-      if(best) vote(best.code, "phone dialling code +"+best.prefix);
+      if(best) vote(best.code, 3, "phone dialling code +"+best.prefix);
     }
     try{
-      var lang=(o.locale||navigator.language||"").toUpperCase();
-      var m=lang.match(/-([A-Z]{2})/);
-      if(m && getCountry(m[1])) vote(m[1], "device language "+o.locale||navigator.language);
+      var rawLang=o.locale||navigator.language||"";
+      var m=String(rawLang).toUpperCase().match(/-([A-Z]{2})/);
+      if(m && getCountry(m[1])) vote(m[1], 0.5, "device language "+rawLang);
     }catch(e){}
     try{
       var tz=o.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||"";
-      COUNTRIES.forEach(function(c){ if(c.tz===tz) vote(c.code, "device timezone "+tz); });
+      COUNTRIES.forEach(function(c){ if(c.tz===tz) vote(c.code, 2, "device timezone "+tz); });
     }catch(e){}
-    var top=null, topN=0, total=0;
-    Object.keys(cands).forEach(function(k){ total+=cands[k]; if(cands[k]>topN){topN=cands[k];top=k;} });
+    var top=null, topScore=0;
+    Object.keys(scores).forEach(function(k){ if(scores[k]>topScore){topScore=scores[k];top=k;} });
     if(!top) return {country:null, confidence:"none", reasons:["no signal"]};
     return { country:top, currency:getCountry(top).currency,
-      confidence: topN>=2?"high":(total>1?"medium":"low"), reasons:reasons };
+      confidence: topScore>=3?"high":(topScore>=2?"medium":"low"), reasons:reasons };
   }
   function defaultSet(countryCode){
     var c=getCountry(countryCode);
