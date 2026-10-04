@@ -58,7 +58,7 @@
 
   <div class="card" id="sCountry">
     <b>Where are you based?</b>
-    <p class="muted" id="detectMsg">Detecting your country…</p>
+    <p class="muted">Select the country you live in. We'll add its currency plus USD, GBP and EUR — you can change everything.</p>
     <label>Country</label>
     <select id="country"></select>
     <label>Your Trex currencies</label>
@@ -139,30 +139,29 @@ document.querySelectorAll(".otp").forEach(function(box){
 });
 function timer(el,secs){ var s=secs; var t=setInterval(function(){ el.textContent=s>0?("Didn't get it? Resend in "+(s--)+"s."):""; if(s<0){clearInterval(t);} },1000); }
 function prof(){ return TREX.profile()||{}; }
-function fillCountries(sel,val){ sel.innerHTML=""; TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; sel.appendChild(o); }); sel.value=val; }
+function openCountry(){
+  fillCountries($("country"));
+  chosen=TREX.defaultSet("NG");
+  fillCurs($("addCur"),"USD"); paintCurList();
+}
+function fillCountries(sel,val){ sel.innerHTML=""; var ph=document.createElement("option"); ph.value=""; ph.textContent="Select your country…"; sel.appendChild(ph); TREX.COUNTRIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.name; sel.appendChild(o); }); sel.value=val||""; }
 function fillCurs(sel,val){ sel.innerHTML=""; TREX.CURRENCIES.forEach(function(c){ var o=document.createElement("option"); o.value=c.code; o.textContent=c.flag+" "+c.code+" — "+c.name; sel.appendChild(o); }); sel.value=val; }
 function paintCurList(){
   $("curList").innerHTML=chosen.map(function(code){ var c=TREX.getCurrency(code); return "<span class='curpill'>"+c.flag+" "+code+"</span>"; }).join("");
 }
-function openCountry(){
-function openCountry(){
-  var d=TREX.detectCountry({});
-  fillCountries($("country"));
-  if(d.country){
-    var g=TREX.getCountry(d.country);
-    $("country").value=d.country;
-    $("detectMsg").textContent="We detected "+g.flag+" "+g.name+" ("+d.confidence+" confidence). We've added "+g.currency+" to your dashboard — change anything you like.";
-    chosen=TREX.defaultSet(d.country);
-  } else {
-    $("detectMsg").textContent="We couldn't confidently determine your country. Please select it.";
-    chosen=TREX.defaultSet("NG");
-  }
-  fillCurs($("addCur"),"USD"); paintCurList();
-}
+/* Country is chosen by the user — no auto-detection. */
 openCountry();
 $("addCur").onchange=function(){ var c=$("addCur").value; if(chosen.indexOf(c)<0){chosen.push(c); paintCurList();} };
+$("country").onchange=function(){
+  var cc=$("country").value; if(!cc) return;
+  var g=TREX.getCountry(cc);
+  chosen=TREX.defaultSet(cc);
+  paintCurList();
+};
 $("countryGo").onclick=function(){
-  var cc=$("country").value, g=TREX.getCountry(cc);
+  var cc=$("country").value;
+  if(!cc){ alert("Please select your country first."); return; }
+  var g=TREX.getCountry(cc);
   if(chosen.indexOf(g.currency)<0)chosen.unshift(g.currency);
   TREX.saveProfile({countryCode:cc,localCurrency:g.currency,preferred:g.currency,display:g.currency,enabled:chosen.slice(),favorites:[],confirmed:true,recentPairs:[chosen[1]?chosen[1]+"-"+g.currency:g.currency+"-USD"]});
   $("d1").className="step-dot done"; $("d2").className="step-dot on";
