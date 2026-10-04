@@ -54,11 +54,26 @@
     <div class="muted" style="color:#C7CBD1" id="ctryLine"></div>
   </div>
 
+  <div class="btnrow" id="dashTabs" style="margin-top:10px">
+    <button class="pairchip" data-dt="dtCur">💰 Currencies</button>
+    <button class="pairchip" data-dt="dtConv">🔄 Convert</button>
+    <button class="pairchip" data-dt="dtAct">🧾 Activity</button>
+  </div>
+
+  <div id="dtCur">
   <div class="card" id="currencies">
     <div style="display:flex;justify-content:space-between;align-items:center"><b>Your currencies</b><button class="btn small line" id="addCur">+ Add</button></div>
     <div class="carousel" id="curRow"></div>
   </div>
 
+  <div class="card">
+    <b>Your frequent pairs</b>
+    <div class="btnrow" id="freqRow" style="margin-top:8px"></div>
+    <p class="muted">Suggested from your country and recent activity.</p>
+  </div>
+  </div>
+
+  <div id="dtConv" style="display:none">
   <div class="card">
     <b>Quick convert</b>
     <p class="muted">Illustrative reference rate — a firm quote is locked inside a trade.</p>
@@ -69,13 +84,9 @@
     <div class="muted" id="cMeta"></div>
     <div class="btnrow"><button class="btn small" id="cTrade">Trade this pair →</button></div>
   </div>
-
-  <div class="card">
-    <b>Your frequent pairs</b>
-    <div class="btnrow" id="freqRow" style="margin-top:8px"></div>
-    <p class="muted">Suggested from your country and recent activity.</p>
   </div>
 
+  <div id="dtAct" style="display:none">
   <div class="card">
     <b>Transactions</b>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
@@ -84,6 +95,7 @@
       <select id="fWhen"><option value="30">Last 30 days</option><option value="7">Last 7 days</option><option value="365">Last year</option></select>
     </div>
     <div id="txList"></div>
+  </div>
   </div>
 </div>
 
@@ -209,6 +221,7 @@ function renderCurSearch(q){
 $("curSearch").oninput=function(){renderCurSearch($("curSearch").value);};
 function addCur(code){ var p=prof(); if(p.enabled.indexOf(code)<0){p.enabled.push(code); TREX.saveProfile(p); paintAll(); toast(code+" added");} renderCurSearch($("curSearch").value); }
 function paintAll(){ paintCountry(); paintCurrencies(); paintFreq(); paintTx(); }
+document.querySelectorAll("#dashTabs [data-dt]").forEach(function(b){ b.onclick=function(){ ["dtCur","dtConv","dtAct"].forEach(function(id){ $(id).style.display=id===b.dataset.dt?"block":"none"; }); window.scrollTo(0,0); }; });
 paintCountry(); paintCurrencies(); paintConverter(); paintFreq(); paintTx(); popRow();
 </script>
 </body>
