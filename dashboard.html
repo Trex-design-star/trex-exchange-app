@@ -54,12 +54,6 @@
     <div class="muted" style="color:#C7CBD1" id="ctryLine"></div>
   </div>
 
-  <div id="confirmBar" class="card" style="display:none;border-color:var(--blue)">
-    <b>Confirm your country</b>
-    <p class="muted" id="detectMsg"></p>
-    <div class="btnrow"><button class="btn small" id="confirmCtry">Looks right</button><button class="btn small line" id="changeCtry">Change</button></div>
-  </div>
-
   <div class="card" id="currencies">
     <div style="display:flex;justify-content:space-between;align-items:center"><b>Your currencies</b><button class="btn small line" id="addCur">+ Add</button></div>
     <div class="carousel" id="curRow"></div>
@@ -120,15 +114,6 @@ function paintCountry(){
   var p=prof(), c=TREX.getCountry(p.countryCode);
   $("ctryLine").textContent=c?(c.flag+" "+c.name+" • Local "+p.localCurrency):"";
   $("hello").textContent="Welcome back • "+(p.preferred||p.localCurrency)+" is your preferred currency";
-  if(!p.confirmed){
-    var d=TREX.detectCountry({phone:p.phone||""});
-    if(d.country){ var g=TREX.getCountry(d.country);
-      $("confirmBar").style.display="block";
-      $("detectMsg").textContent="We detected "+g.flag+" "+g.name+" — we've added "+g.currency+" to your dashboard. You can change this at any time.";
-      $("confirmCtry").onclick=function(){ p.countryCode=g.code; p.localCurrency=g.currency; if(p.enabled.indexOf(g.currency)<0)p.enabled.unshift(g.currency); p.confirmed=true; TREX.saveProfile(p); paintAll(); toast("Country confirmed"); };
-      $("changeCtry").onclick=function(){ location.href="settings.html"; };
-    } else { $("confirmBar").style.display="block"; $("detectMsg").textContent="We couldn't confidently determine your country. Please choose it in Settings."; $("confirmCtry").style.display="none"; $("changeCtry").onclick=function(){location.href="settings.html";}; }
-  } else $("confirmBar").style.display="none";
 }
 function paintCurrencies(){
   var p=prof(), row=$("curRow"); row.innerHTML="";
