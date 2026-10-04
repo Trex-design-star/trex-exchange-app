@@ -122,6 +122,8 @@ end
 def send_json(res, obj, status = 200)
   res.status = status
   res['Content-Type'] = 'application/json'
+  res['Access-Control-Allow-Origin'] = '*'
+  res['Access-Control-Allow-Headers'] = 'Content-Type, X-Idempotency-Key'
   res.body = JSON.generate(obj)
 end
 
@@ -149,6 +151,14 @@ end
 server = WEBrick::HTTPServer.new(Port: PORT, AccessLog: [], Logger: WEBrick::Log.new(File::NULL))
 
 server.mount_proc('/api') do |req, res|
+  if req.request_method == 'OPTIONS'
+    res.status = 200
+    res['Access-Control-Allow-Origin'] = '*'
+    res['Access-Control-Allow-Headers'] = 'Content-Type, X-Idempotency-Key'
+    res['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    res.body = ''
+    next
+  end
   parts = req.path.sub(%r{^/api/?}, '').split('/').reject(&:empty?)
   begin
     case [req.request_method, parts[0]]
