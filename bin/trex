@@ -11,7 +11,7 @@ require 'json'
 require 'uri'
 require 'optparse'
 
-BASE = ENV.fetch('TREX_API', 'http://localhost:8080')
+BASE = ENV.fetch('TREX_API', 'http://localhost:3001')
 
 def call(method, path, body = nil, key = nil)
   uri = URI(BASE + '/api' + path)
