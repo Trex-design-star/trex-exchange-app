@@ -3,7 +3,7 @@
 var API = (function () {
   var bases = [];
   if (location.protocol.indexOf("http") === 0) bases.push("/api");
-  if (location.host !== "localhost:8080" && location.host !== "127.0.0.1:8080") bases.push("http://localhost:8080/api");
+  if (location.host !== "localhost:3001" && location.host !== "127.0.0.1:3001") bases.push("http://localhost:3001/api");
   var liveBase = null;
   // text/plain + key-in-body keeps every request CORS-simple (no preflight);
   // the server reads the idempotency key from the body.
