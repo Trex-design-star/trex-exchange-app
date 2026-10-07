@@ -1,0 +1,65 @@
+import { TradesService } from './trades.service';
+export declare class TradesController {
+    private trades;
+    constructor(trades: TradesService);
+    open(dto: any, key?: string): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }>;
+    list(): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }[]>;
+    act(id: string, action: string, body: any): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }>;
+}
