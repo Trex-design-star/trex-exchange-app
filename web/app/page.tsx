@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   let offers: Offer[] = [];
   try {
-    const r = await api.get<{ ok: boolean; offers: Offer[] }>('/offers');
-    if (r.ok) offers = r.offers;
+    const r = await api.get<Offer[] | { ok: boolean; offers: Offer[] }>('/offers');
+    offers = Array.isArray(r) ? r : r.offers ?? [];
   } catch {
     offers = [];
   }
