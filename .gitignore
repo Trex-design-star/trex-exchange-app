@@ -10,3 +10,6 @@ backend/dist/
 web/.next/
 # macOS noise
 .DS_Store
+
+# Local Netlify folder
+.netlify
