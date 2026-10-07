@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  functions = "functions"
+
+# The app calls same-origin /api/* everywhere; on Netlify those run here.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
