@@ -1,0 +1,81 @@
+import { PrismaService } from '../prisma.service';
+import { LedgerService } from '../ledger/ledger.service';
+import { RatesService } from '../rates/rates.service';
+export declare class TradesService {
+    private prisma;
+    private ledger;
+    private rates;
+    constructor(prisma: PrismaService, ledger: LedgerService, rates: RatesService);
+    private offerCapacity;
+    open(dto: {
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        sendMinor: number;
+        idemKey?: string;
+    }): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }>;
+    recent(): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }[]>;
+    act(id: string, action: string, opts?: {
+        proofUrl?: string;
+        from?: string;
+        text?: string;
+    }): Promise<{
+        id: string;
+        idemKey: string | null;
+        createdAt: Date;
+        vendorId: string;
+        rate: import("@prisma/client/runtime/library").Decimal;
+        updatedAt: Date;
+        lockMinor: number;
+        sendMinor: number;
+        recvMinor: number;
+        feeMinor: number;
+        feePct: import("@prisma/client/runtime/library").Decimal;
+        offerId: string;
+        customerId: string;
+        sellCcy: string;
+        recvCcy: string;
+        state: string;
+        proofUrl: string | null;
+        method: string | null;
+    }>;
+}
