@@ -4,9 +4,13 @@
 // precision; offer amounts stay in major units like the preview contract.
 const { Pool } = require('pg');
 
+const connStr = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL || '';
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  // Netlify DB exposes NETLIFY_DATABASE_URL (pooled); plain DATABASE_URL
+  // works too for local runs and other providers. Local proxies speak
+  // plain Postgres — only use TLS against real hosts.
+  connectionString: connStr,
+  ssl: /localhost|127\.0\.0\.1/.test(connStr) ? false : { rejectUnauthorized: false },
   max: 3,
 });
 
@@ -77,7 +81,11 @@ async function withIdem(key, fn) {
 
 exports.handler = async (event) => {
   const method = event.httpMethod;
-  const seg = (event.path.replace(/^\/\.netlify\/functions\/api\/?/, '').split('/').filter(Boolean));
+  // Netlify may pass the original path (/api/health) or the rewritten
+  // function path (/.netlify/functions/api/health) — accept all forms.
+  let p = String(event.path || '').replace(/^\/+/, '');
+  p = p.replace(/^\.netlify\/functions\/api\/?/, '').replace(/^api\/?/, '');
+  const seg = p.split('/').filter(Boolean).map((s) => s.split('?')[0]);
   let body = {};
   try { body = event.body ? JSON.parse(event.body) : {}; } catch (e) { body = {}; }
   const key = (event.headers && (event.headers['x-idempotency-key'] || event.headers['X-Idempotency-Key'])) || body.idempotency_key;
